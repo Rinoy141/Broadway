@@ -144,7 +144,7 @@ class _productparchaseState extends State<productparchase> {
                         )),
                         SizedBox(height: h*0.01,),
                         Text("Visa, Mastercard, American Express etc.",style: TextStyle(
-                          fontSize: w*0.0333
+                          fontSize: w*0.029
                         )),
                       ],
                     ),

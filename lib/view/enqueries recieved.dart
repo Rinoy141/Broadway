@@ -91,7 +91,7 @@ class _enquiriesrecievedState extends State<enquiriesrecieved> {
        SizedBox(height: h*0.01),
        Container(
          height: h*0.3,
-         width: w*0.3,
+         width: w*1,
          color: thecolors.skyblue,
          child: Padding(
            padding:  EdgeInsets.all(w*0.03),

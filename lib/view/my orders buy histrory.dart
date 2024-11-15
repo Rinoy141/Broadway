@@ -127,7 +127,7 @@ class _MyOrdersState extends State<MyOrders> {
             Navigator.push(context,MaterialPageRoute(builder: (context) => enquiriesrecieved(),));
           },
           child: Container(
-            height: h*0.1,
+            height: h*0.13,
             width: w*1,
             decoration: BoxDecoration(
                 color: thecolors.gray1,

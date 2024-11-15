@@ -13,10 +13,17 @@ import 'package:broadway/onbrding_screen/logo.dart';
 import 'package:broadway/onbrding_screen/onbrding_provider.dart';
 import 'package:broadway/onbrding_screen/onbrding_screen.dart';
 import 'package:broadway/login/registration.dart';
+import 'package:broadway/profile/edit_profile.dart';
 import 'package:broadway/profile/profile.dart';
 import 'package:broadway/providerss/app_provider.dart';
 import 'package:broadway/view/buy_one.dart';
 import 'package:broadway/view/enqueries%20recieved.dart';
+import 'package:broadway/view/my%20orders%20buy%20histrory.dart';
+import 'package:broadway/view/order_confirmation.dart';
+import 'package:broadway/view/payment.dart';
+import 'package:broadway/view/product%20details.dart';
+import 'package:broadway/view/product_parchase.dart';
+import 'package:broadway/view/sell_one.dart';
 import 'package:broadway/view/upload_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -46,6 +53,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        debugShowCheckedModeBanner: false, home: MedicalApp());
+        debugShowCheckedModeBanner: false, home: LoginPage());
   }
 }

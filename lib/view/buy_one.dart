@@ -214,7 +214,7 @@ class _BuyOneState extends State<BuyOne> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: MediaQuery.of(context).size.height*0.01),
+                    // SizedBox(height: MediaQuery.of(context).size.height*0.01),
                     Text("Based on your search"),
                     SizedBox(height: MediaQuery.of(context).size.height*0.02),
                     Column(
@@ -284,12 +284,12 @@ class _BuyOneState extends State<BuyOne> {
                     Text("Nearby You",style: TextStyle(
                       fontWeight: FontWeight.w500
                     )),
-                    SizedBox(height: MediaQuery.of(context).size.height*0.012),
+                    SizedBox(height: MediaQuery.of(context).size.height*0.01),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          height: MediaQuery.of(context).size.height * 0.19,
+                          height: MediaQuery.of(context).size.height * 0.15,
                           decoration: BoxDecoration(
                             boxShadow: [
                               BoxShadow(
@@ -326,7 +326,7 @@ class _BuyOneState extends State<BuyOne> {
                                     children: [
                                       Image.asset(
                                         mango[index]["image"] ?? 'assets/images/default.png',
-                                        height: MediaQuery.of(context).size.height * 0.07,
+                                        height: MediaQuery.of(context).size.height * 0.045,
                                         width: MediaQuery.of(context).size.width * 0.25,
                                         // fit: BoxFit.cover,
                                       ),
