@@ -1,9 +1,12 @@
+
 import 'dart:math';
+
+import 'package:broadway/food_app/nearby.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'appbar.dart';
 import 'best_partners_page.dart';
-import 'food_details_page.dart';
 import 'food_provider.dart';
 
 class FoodDeliveryHomePage extends StatelessWidget {
@@ -22,13 +25,14 @@ class FoodDeliveryHomePage extends StatelessWidget {
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
-                      children: [CustomAppBarContent(),
+                       children: [CustomAppBarContent(),
                         Padding(
                           padding: const EdgeInsets.only(
                               top: 10, left: 10, right: 10),
                           child: _buildCategorySection(),
                         ),
-                        _buildBestPartnersSection(context),
+                        BestPartnersPage(),
+
                         _buildTabSection(context),
                       ],
                     ),
@@ -129,96 +133,8 @@ class FoodDeliveryHomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildBestPartnersSection(BuildContext context) {
-    var restaurantProvider = Provider.of<RestaurantProvider>(context);
-    var restaurants = restaurantProvider.restaurants;
 
-    return Container(
-      margin: const EdgeInsets.all(8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Best Partners',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const BestPartnersPage(),
-                          ));
-                    },
-                    child: const Text('See all')),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: MediaQuery.of(context).size.height * 0.215,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: restaurants.length,
-                itemBuilder: (context, index) {
-                  final restaurant = restaurants[index];
-                  return InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              DetailsPage(restaurantIndex: index),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.65,
-                      margin: const EdgeInsets.only(right: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.asset(
-                              restaurant.image,
-                              height:
-                                  MediaQuery.of(context).size.height * 0.135,
-                              width: MediaQuery.of(context).size.width * 0.64,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            restaurant.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            '${restaurant.isOpen ? 'Open' : 'Closed'} · ${restaurant.location}',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                          Row(
-                            children: [
-                              const Icon(Icons.star,
-                                  color: Colors.orange, size: 16),
-                              Text(
-                                  '${restaurant.rating} · ${restaurant.distance} · Free shipping'),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+}
 
   Widget _buildTabSection(BuildContext context) {
     return DefaultTabController(
@@ -241,7 +157,7 @@ class FoodDeliveryHomePage extends StatelessWidget {
             height: 300, // Adjust the height to fit your content
             child: TabBarView(
               children: [
-                _buildNearbySection(context),
+                NearbyRestaurantsWidget(),
                 _buildSalesSection(),
                 _buildRateSection(),
                 _buildFastSection(),
@@ -253,97 +169,7 @@ class FoodDeliveryHomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildNearbySection(BuildContext context) {
-    var restaurantProvider = Provider.of<RestaurantProvider>(context);
-    var restaurants = restaurantProvider.restaurants;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 250,
-          child: ListView.builder(
-            scrollDirection: Axis.vertical,
-            itemCount: restaurants.length,
-            itemBuilder: (context, index) {
-              final restaurant = restaurants[index];
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => DetailsPage(restaurantIndex: index),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: 200,
-                  margin: const EdgeInsets.only(right: 16),
-                  child: Card(
-                    margin: EdgeInsets.zero,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.asset(
-                              restaurant.image,
-                              height: 150,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Text(
-                                restaurant.name,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 18),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(Icons.verified,
-                                  color: Colors.green, size: 16),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${restaurant.isOpen ? 'Open' : 'Closed'} · ${restaurant.location}',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.star,
-                                  color: Colors.orange, size: 16),
-                              const SizedBox(width: 4),
-                              Text('${restaurant.rating}'),
-                              const SizedBox(width: 8),
-                              const Icon(Icons.location_on,
-                                  color: Colors.grey, size: 16),
-                              const SizedBox(width: 4),
-                              Text(restaurant.distance),
-                              const SizedBox(width: 8),
-                              const Icon(Icons.local_shipping,
-                                  color: Colors.grey, size: 16),
-                              const SizedBox(width: 4),
-                              const Text('Free shipping'),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildSalesSection() {
     return const Center(child: Text('Sales Section'));
@@ -356,4 +182,4 @@ class FoodDeliveryHomePage extends StatelessWidget {
   Widget _buildFastSection() {
     return const Center(child: Text('Fast Section'));
   }
-}
+

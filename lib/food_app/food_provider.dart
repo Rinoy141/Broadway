@@ -1,240 +1,15 @@
+
 import 'package:broadway/food_app/restaurant_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../providerss/app_provider.dart';
 import 'appbar.dart';
-import 'food_details_page.dart';
-
-class RestaurantProvider with ChangeNotifier {
-  final List<Restaurant> _restaurants = [
-    Restaurant(
-      name: 'Burger King',
-      location: 'Kochi',
-      image: 'Assets/image 6.png',
-      isOpen: true,
-      rating: 4.5,
-      distance: '1.2 km',
-      deliveryTime: '15 Mins',
-      popularItems: [
-        PopularItem(
-          name: 'Double Cheese Burger',
-          price: 5.99,
-          category: 'Burger',
-          imageUrl: 'Assets/image 6.png',
-        ),
-        PopularItem(
-          name: 'Veg Burger',
-          price: 7.99,
-          category: 'Burger',
-          imageUrl: 'Assets/image 6.png',
-        ),
-        PopularItem(
-          name: 'Potato Wedges',
-          price: 3.99,
-          category: 'Sides',
-          imageUrl: 'Assets/image 6.png',
-        ),
-      ],
-      foodCategories: [
-        ItemCategory(
-          name: 'Hot Burger Combo',
-          items: [
-            Item(
-              name: 'Combo Spicy Tender',
-              prices: {'S': 8.99, 'M': 10.15, 'L': 11.99},
-              imageUrl: 'Assets/image 6.png',
-              description: 'Tender grilled spicy chicken combo',
-              category: 'Burger Combo',
-            ),
-            Item(
-              name: 'Combo Tender Grilled',
-              prices: {'S': 8.99, 'M': 10.15, 'L': 11.99},
-              imageUrl: 'Assets/image 6.png',
-              description: 'Tender grilled chicken combo',
-              category: 'Burger Combo',
-            ),
-          ],
-        ),
-        ItemCategory(
-          name: 'Fried Chicken',
-          items: [
-            Item(
-              name: 'Chicken BBQ',
-              prices: {'S': 9.99, 'M': 11.99, 'L': 13.99},
-              imageUrl: 'Assets/image 6.png',
-              description: 'BBQ chicken with sides',
-              category: 'Chicken',
-            ),
-            Item(
-              name: 'Combo Chicken Crispy',
-              prices: {'S': 9.99, 'M': 11.99, 'L': 13.99},
-              imageUrl: 'Assets/image 6.png',
-              description: 'Crispy chicken combo',
-              category: 'Chicken',
-            ),
-          ],
-        ),
-      ],
-    ),
-    Restaurant(
-      name: 'Dominos',
-      location: 'Thrissur',
-      image: 'Assets/image 6.png',
-      isOpen: true,
-      rating: 4.5,
-      distance: '2.5 km',
-      deliveryTime: '15 Mins',
-      popularItems: [
-        PopularItem(
-          name: 'Extreme Cheese',
-          price: 5.99,
-          category: 'Burger',
-          imageUrl: 'Assets/image 6.png',
-        ),
-        PopularItem(
-          name: 'Bacon Cheese Burger',
-          price: 7.99,
-          category: 'Burger',
-          imageUrl: 'Assets/image 6.png',
-        ),
-        PopularItem(
-          name: 'Potato Wedges',
-          price: 3.99,
-          category: 'Sides',
-          imageUrl: 'Assets/image 6.png',
-        ),
-      ],
-      foodCategories: [
-        ItemCategory(
-          name: 'Hot Burger Combo',
-          items: [
-            Item(
-              name: 'Combo Spicy Tender',
-              prices: {'S': 8.99, 'M': 10.15, 'L': 11.99},
-              imageUrl: 'Assets/image 6.png',
-              description: 'Tender grilled spicy chicken combo',
-              category: 'Burger Combo',
-            ),
-            Item(
-              name: 'Combo BBQ Bacon',
-              prices: {'S': 8.99, 'M': 10.15, 'L': 11.99},
-              imageUrl: 'Assets/image 6.png',
-              description: 'BBQ bacon and chicken combo',
-              category: 'Burger Combo',
-            ),
-          ],
-        ),
-        ItemCategory(
-          name: 'Fried Chicken',
-          items: [
-            Item(
-              name: 'Chicken BBQ',
-              prices: {'S': 9.99, 'M': 11.99, 'L': 13.99},
-              imageUrl: 'Assets/image 6.png',
-              description: 'BBQ chicken with sides',
-              category: 'Chicken',
-            ),
-            Item(
-              name: 'Combo Chicken Crispy',
-              prices: {'S': 9.99, 'M': 11.99, 'L': 13.99},
-              imageUrl: 'Assets/image 6.png',
-              description: 'Crispy chicken combo',
-              category: 'Chicken',
-            ),
-          ],
-        ),
-      ],
-    ),
-  ];
-
-
-  List<Restaurant> get restaurants => _restaurants;
-
-  // Optionally add more methods to modify or fetch data
-  void addRestaurant(Restaurant restaurant) {
-    _restaurants.add(restaurant);
-    notifyListeners();
-  }
-  String _selectedSize = 'M';
-  int _quantity = 1;
-
-  String get selectedSize => _selectedSize;
-  int get quantity => _quantity;
-
-  void setSelectedSize(String size) {
-    _selectedSize = size;
-    notifyListeners();
-  }
-
-  void updateQuantity(int change) {
-    _quantity = (_quantity + change).clamp(1, 10);
-    notifyListeners();
-  }
-}
 
 
 
 
-class SearchModel extends ChangeNotifier {
-  // Reference to RestaurantProvider to access the list of restaurants
-  final RestaurantProvider _restaurantProvider;
-  List<Restaurant> _restaurants = [];
-  List<Restaurant> _filteredRestaurants = [];
 
-  SearchModel(this._restaurantProvider) {
-    // Initialize the restaurant list from the provider
-    _restaurants = _restaurantProvider.restaurants;
-    _filteredRestaurants = _restaurants;
-  }
-
-  List<Restaurant> get filteredRestaurants => _filteredRestaurants;
-
-  void filterSearchResults(String query) {
-    _filteredRestaurants = _restaurants
-        .where((restaurant) =>
-        restaurant.name.toLowerCase().contains(query.toLowerCase())
-    )
-        .toList();
-    notifyListeners();
-  }
-}
-
-
-class AppBarState extends ChangeNotifier {
-  bool _isFilterOpen = false;
-  String _selectedTab = 'Category';
-  String _sortBy = 'Popularity';
-
-  bool get isFilterOpen => _isFilterOpen;
-  String get selectedTab => _selectedTab;
-  String get sortBy => _sortBy;
-
-  void toggleFilter() {
-    _isFilterOpen = !_isFilterOpen;
-    notifyListeners();
-  }
-
-  void setSelectedTab(String tab) {
-    _selectedTab = tab;
-    notifyListeners();
-  }
-
-  void setSortBy(String sort) {
-    _sortBy = sort;
-    notifyListeners();
-  }
-}
-class CustomAppBar extends StatelessWidget {
-  const CustomAppBar({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AppBarState(),
-      child: const CustomAppBarContent(),
-    );
-  }
-}
 
 
 class RatingProvider with ChangeNotifier {
@@ -309,7 +84,66 @@ class RatingProvider with ChangeNotifier {
     notifyListeners();
   }
 }
+class SearchModel extends ChangeNotifier {
+  // Reference to RestaurantProvider to access the list of restaurants
+  final LoginProvider _loginProvider;
+  List<Restaurant> _restaurants = [];
+  List<Restaurant> _filteredRestaurants = [];
 
+  SearchModel(this._loginProvider) {
+    // Initialize the restaurant list from the provider
+    _restaurants = _loginProvider.restaurants;
+    _filteredRestaurants = _restaurants;
+  }
+
+  List<Restaurant> get filteredRestaurants => _filteredRestaurants;
+
+  void filterSearchResults(String query) {
+    _filteredRestaurants = _restaurants
+        .where((restaurant) =>
+        restaurant.restaurantName.toLowerCase().contains(query.toLowerCase())
+    )
+        .toList();
+    notifyListeners();
+  }
+}
+
+
+class AppBarState extends ChangeNotifier {
+  bool _isFilterOpen = false;
+  String _selectedTab = 'Category';
+  String _sortBy = 'Popularity';
+
+  bool get isFilterOpen => _isFilterOpen;
+  String get selectedTab => _selectedTab;
+  String get sortBy => _sortBy;
+
+  void toggleFilter() {
+    _isFilterOpen = !_isFilterOpen;
+    notifyListeners();
+  }
+
+  void setSelectedTab(String tab) {
+    _selectedTab = tab;
+    notifyListeners();
+  }
+
+  void setSortBy(String sort) {
+    _sortBy = sort;
+    notifyListeners();
+  }
+}
+class CustomAppBar extends StatelessWidget {
+  const CustomAppBar({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => AppBarState(),
+      child: const CustomAppBarContent(),
+    );
+  }
+}
 
 
 

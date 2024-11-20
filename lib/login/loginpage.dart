@@ -1,8 +1,8 @@
+import 'package:broadway/food_app/best_partners_page.dart';
 import 'package:broadway/login/app_selection.dart';
 import 'package:broadway/profile/edit_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'forgot_pass_page.dart';
 import 'forgot_password.dart';
 import '../providerss/app_provider.dart';
@@ -96,22 +96,18 @@ class LoginPage extends StatelessWidget {
                             height: MediaQuery.of(context).size.width * 0.13,
                             color: const Color(0xff004CFF),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(17)),
-                            onPressed: () async {
-                              if (await loginProvider.login(context)) {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      // ignore: prefer_const_constructors
-                                        builder: (context) => EditProfilePage()));
-                              }
+                                borderRadius: BorderRadius.circular(17)
+                            ),
+                            onPressed: () {
+                              loginProvider.handleLogin(context);
                             },
                             child: const Text(
                               "Next",
                               style: TextStyle(
                                   color: Color(0xffF3F3F3),
                                   fontSize: 20,
-                                  fontWeight: FontWeight.w300),
+                                  fontWeight: FontWeight.w300
+                              ),
                             ),
                           ),
                         const SizedBox(height: 16),

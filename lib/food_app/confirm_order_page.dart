@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../providerss/app_provider.dart';
 import 'food_provider.dart';
 
 class ConfirmOrderPage extends StatelessWidget {
@@ -125,12 +126,12 @@ class ConfirmOrderPage extends StatelessWidget {
   }
 
   Widget _buildOrderItem(BuildContext context) {
-    final restaurantProvider = context.watch<RestaurantProvider>();
+    final restaurantProvider = context.watch<LoginProvider>();
     final name = popularItem?.name ?? item?.name ?? '';
     final imageUrl = popularItem?.imageUrl ?? item?.imageUrl ?? '';
-    final price = popularItem != null
-        ? popularItem!.price
-        : item?.prices[restaurantProvider.selectedSize] ?? 0.0;
+     // final price = popularItem != null
+     //    ? popularItem!.price
+     //    : item?.prices[restaurantProvider.selectedSize] ?? 0.0;
 
     return Column(
       children: [
@@ -173,19 +174,19 @@ class ConfirmOrderPage extends StatelessWidget {
                                     color: Color(0xffC1C7D0)),
                                 height:
                                     MediaQuery.of(context).size.height * 0.025,
-                                child: IconButton(
-                                  icon: const Icon(
-                                    Icons.remove,
-                                    size: 10,
-                                    color: Colors.white,
-                                  ),
-                                  onPressed: () =>
-                                      restaurantProvider.updateQuantity(-1),
-                                ),
+                                // child: IconButton(
+                                //   icon: const Icon(
+                                //     Icons.remove,
+                                //     size: 10,
+                                //     color: Colors.white,
+                                //   ),
+                                //   // onPressed: () =>
+                                //   //     restaurantProvider.updateQuantity(-1),
+                                // ),
                               ),
-                              Text('${restaurantProvider.quantity}',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold)),
+                              // Text('${restaurantProvider.quantity}',
+                              //     style: const TextStyle(
+                              //         fontWeight: FontWeight.bold)),
                               const SizedBox(
                                 width: 5,
                               ),
@@ -196,23 +197,23 @@ class ConfirmOrderPage extends StatelessWidget {
                                 height:
                                     MediaQuery.of(context).size.height * 0.025,
                                 width: MediaQuery.of(context).size.width * 0.1,
-                                child: IconButton(
-                                  icon: const Icon(
-                                    Icons.add,
-                                    size: 10,
-                                    color: Colors.white,
-                                  ),
-                                  onPressed: () =>
-                                      restaurantProvider.updateQuantity(1),
-                                ),
+                                // child: IconButton(
+                                //   icon: const Icon(
+                                //     Icons.add,
+                                //     size: 10,
+                                //     color: Colors.white,
+                                //   ),
+                                //   onPressed: () =>
+                                //       restaurantProvider.updateQuantity(1),
+                                // ),
                               ),
                             ],
                           ),
                         ),
-                        Text(
-                            '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}',
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w500)),
+                        // Text(
+                        //     '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}',
+                        //     style:
+                        //         const TextStyle(fontWeight: FontWeight.w500)),
                       ],
                     ),
                   ],
@@ -221,30 +222,30 @@ class ConfirmOrderPage extends StatelessWidget {
             ],
           ),
         ),
-        _buildSummaryRow(context),
+        // _buildSummaryRow(context),
       ],
     );
   }
 
-  Widget _buildSummaryRow(BuildContext context) {
-    final restaurantProvider = context.watch<RestaurantProvider>();
-    final price = popularItem != null
-        ? popularItem!.price
-        : item?.prices[restaurantProvider.selectedSize] ?? 0.0;
-
-    return Column(
-      children: [
-        _buildSummaryDetail('Subtotal',
-            '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}'),
-        _buildSummaryDetail('Delivery', '\$0.00'),
-        _buildSummaryDetail('Voucher', '-'),
-        const Divider(),
-        _buildSummaryDetail('Total',
-            '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}',
-            isTotal: true),
-      ],
-    );
-  }
+  // Widget _buildSummaryRow(BuildContext context) {
+  //   final restaurantProvider = context.watch<RestaurantProvider>();
+  //   final price = popularItem != null
+  //       ? popularItem!.price
+  //       : item?.prices[restaurantProvider.selectedSize] ?? 0.0;
+  //
+  //   // return Column(
+  //   //   children: [
+  //   //     _buildSummaryDetail('Subtotal',
+  //   //         '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}'),
+  //   //     _buildSummaryDetail('Delivery', '\$0.00'),
+  //   //     _buildSummaryDetail('Voucher', '-'),
+  //   //     const Divider(),
+  //   //     _buildSummaryDetail('Total',
+  //   //         '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}',
+  //   //         isTotal: true),
+  //   //   ],
+  //   // );
+  // }
 
   Widget _buildSummaryDetail(String label, String value,
       {bool isTotal = false}) {
@@ -293,10 +294,10 @@ class ConfirmOrderPage extends StatelessWidget {
   }
 
   Widget _buildPaymentOptions(BuildContext context) {
-    final restaurantProvider = context.watch<RestaurantProvider>();
-    final price = popularItem != null
-        ? popularItem!.price
-        : item?.prices[restaurantProvider.selectedSize] ?? 0.0;
+    // final restaurantProvider = context.watch<RestaurantProvider>();
+    // final price = popularItem != null
+    //     ? popularItem!.price
+    //     : item?.prices[restaurantProvider.selectedSize] ?? 0.0;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -314,14 +315,14 @@ class ConfirmOrderPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              GestureDetector(
-                onTap: () => _showPaymentBottomSheet(context),
-                child: _buildPaymentOption('Paypal',
-                    '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}'),
-              ),
-              _buildPaymentOption('Cash',
-                  '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}',
-                  isSelected: true),
+              // GestureDetector(
+              //   onTap: () => _showPaymentBottomSheet(context),
+              //   child: _buildPaymentOption('Paypal',
+              //       '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}'),
+              // ),
+              // _buildPaymentOption('Cash',
+              //     '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}',
+              //     isSelected: true),
             ],
           ),
           const SizedBox(height: 20),

@@ -1,3 +1,4 @@
+import 'package:broadway/food_app/best_partners_page.dart';
 import 'package:broadway/food_app/food_delivery_homepage.dart';
 import 'package:broadway/food_app/food_details_page.dart';
 import 'package:broadway/food_app/order_history page.dart';
@@ -36,11 +37,12 @@ void main() {
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (context) => OnboardingState()),
-      ChangeNotifierProvider(create: (context) => RestaurantProvider()),
       ChangeNotifierProvider(create: (context) => RatingProvider()),
       ChangeNotifierProvider(create: (context) => PasswordRecoveryProvider()),
       ChangeNotifierProvider(create: (context) => CategoryProvider()),
       ChangeNotifierProvider(create: (context) => NotificationSettings()),
+      ChangeNotifierProvider(create: (context) => LoginProvider()),
+
     ],
     child:  MyApp(),
   ));

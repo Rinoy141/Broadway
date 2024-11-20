@@ -1,48 +1,63 @@
-
-import 'package:broadway/food_app/restaurant_model.dart';
-import 'package:broadway/food_app/size_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'food_provider.dart';
+import '../providerss/app_provider.dart';
+import 'restaurant_model.dart';
 
 
 
-class DetailsPage extends StatelessWidget {
-  final int restaurantIndex;
+class RestaurantDetailsPage extends StatefulWidget {
+  final Restaurant restaurant;
 
-  const DetailsPage({super.key, required this.restaurantIndex});
+  const RestaurantDetailsPage({Key? key, required this.restaurant}) : super(key: key);
+
+  @override
+  _RestaurantDetailsPageState createState() => _RestaurantDetailsPageState();
+}
+
+class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<LoginProvider>(context, listen: false)
+          .fetchRestaurantMenu(widget.restaurant.id);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final restaurantProvider = Provider.of<RestaurantProvider>(context);
-    final restaurant = restaurantProvider.restaurants[restaurantIndex];
-
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            header(context, restaurant),
-            tabSection(context,restaurant),
-          ],
-        ),
+      body: Consumer<LoginProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildHeader(context),
+                _buildTabSection(context, provider),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget header(BuildContext context, Restaurant restaurant) {
+  Widget _buildHeader(BuildContext context) {
     return Stack(
       children: [
-        // Restaurant Image
         Container(
-          height: MediaQuery.of(context).size.height * 0.3, // Adjust as needed
+          height: MediaQuery.of(context).size.height * 0.3,
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: AssetImage(restaurant.image),
+              image: NetworkImage(widget.restaurant.imageUrl ?? 'placeholder_url'),
               fit: BoxFit.cover,
             ),
           ),
         ),
-        // Overlay gradient for better text visibility
         Container(
           height: MediaQuery.of(context).size.height * 0.38,
           decoration: BoxDecoration(
@@ -73,7 +88,7 @@ class DetailsPage extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      restaurant.name,
+                      widget.restaurant.restaurantName,
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -110,18 +125,18 @@ class DetailsPage extends StatelessWidget {
                     const SizedBox(
                       width: 5,
                     ),
-                    Text('•  ${restaurant.location}'),
+                    Text('•  ${widget.restaurant.district}'),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     const Icon(Icons.star, color: Colors.amber, size: 16),
-                    Text('${restaurant.rating}'),
+                    Text('${widget.restaurant.averageRating}'),
                     const SizedBox(width: 16),
                     const Icon(Icons.access_time_filled_sharp,
                         size: 16, color: Colors.grey),
-                    Text(restaurant.deliveryTime),
+                    Text(widget.restaurant.distance.toString()),
                     const SizedBox(width: 16),
                     const Icon(Icons.monetization_on_outlined,
                         size: 16, color: Colors.grey),
@@ -144,11 +159,12 @@ class DetailsPage extends StatelessWidget {
             ),
           ),
         ),
+
       ],
     );
   }
 
-  Widget tabSection(BuildContext context,Restaurant restaurant) {
+  Widget _buildTabSection(BuildContext context, LoginProvider provider) {
     return DefaultTabController(
       length: 2,
       child: Column(
@@ -163,8 +179,8 @@ class DetailsPage extends StatelessWidget {
             height: 500,
             child: TabBarView(
               children: [
-                deliveryTab(context,restaurant), // Delivery tab shows popular items only
-                reviewTab(),
+                _buildDeliveryTab(context, provider),
+                _buildReviewTab(),
               ],
             ),
           ),
@@ -173,7 +189,7 @@ class DetailsPage extends StatelessWidget {
     );
   }
 
-  Widget deliveryTab(BuildContext context, Restaurant restaurant) {
+  Widget _buildDeliveryTab(BuildContext context, LoginProvider provider) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -185,80 +201,47 @@ class DetailsPage extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-          // Horizontal List for popular items
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.3,
-            child: InkWell(onTap: () {
-               Navigator.push(context, MaterialPageRoute(builder: (context) => const CustomizationPage(),));
-            },
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: restaurant.popularItems?.length,
-                itemBuilder: (context, index) {
-                  return InkWell(onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CustomizationPage(
-                          popularItem: restaurant.popularItems![index], // Pass PopularItem
-                        ),
-                      ),
-                    );
-                  } ,child: popularItemSection(restaurant.popularItems![index],context));
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-      
-          // Loop through the food categories (Hot Burger Combo, Fried Chicken, etc.)
-          for (var category in restaurant.foodCategories) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                category.name,
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(), 
-              itemCount: category.items.length,
-              itemBuilder: (context, index) {
-                return InkWell(onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CustomizationPage(
-                        item: category.items[index], // Pass regular item
-                      ),
-                    ),
-                  );
-                },child: foodItemSection(category.items[index]));
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
+          _buildPopularItemsList(context, provider.popularItems),
+          _buildFoodCategories(context, provider.foodCategories),
         ],
       ),
     );
   }
 
-  Widget popularItemSection(PopularItem item, BuildContext context) {
+  Widget _buildPopularItemsList(BuildContext context, List<PopularItem> popularItems) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.3,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: popularItems.length,
+        itemBuilder: (context, index) {
+          final item = popularItems[index];
+          return InkWell(
+            onTap: () {
+
+            },
+            child: _buildPopularItemWidget(item, context),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPopularItemWidget(PopularItem item, BuildContext context) {
+
     return Container(
-      width: MediaQuery.of(context).size.width*0.4,
+      width: MediaQuery.of(context).size.width * 0.4,
+
       margin: const EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            height: MediaQuery.of(context).size.height*0.15,
+            height: MediaQuery.of(context).size.height * 0.15,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               image: DecorationImage(
-                image: AssetImage(item.imageUrl),
+                image: NetworkImage(item.imageUrl),
                 fit: BoxFit.cover,
               ),
             ),
@@ -270,7 +253,7 @@ class DetailsPage extends StatelessWidget {
           ),
           Row(
             children: [
-              Text('\$${item.price.toStringAsFixed(2)} ',style: TextStyle(color: Colors.green),),
+              Text('\$${item.price.toStringAsFixed(2)} ', style: const TextStyle(color: Colors.green)),
               Text('• ${item.category}')
             ],
           ),
@@ -279,35 +262,65 @@ class DetailsPage extends StatelessWidget {
     );
   }
 
-// Widget for displaying each food item in the "Hot Burger Combo" and "Fried Chicken" sections
-  Widget foodItemSection(Item item) {
+  Widget _buildFoodCategories(BuildContext context, List<FoodCategory> categories) {
+    return Column(
+      children: categories.map((category) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                category.name,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              itemCount: category.items.length,
+              itemBuilder: (context, index) {
+                final item = category.items[index];
+                return InkWell(
+                  onTap: () {
+
+                  },
+                  child: _buildFoodItemWidget(item),
+                );
+              },
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildFoodItemWidget(Item item) {
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
-          // Image of the food item
           Container(
             width: 80,
             height: 80,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               image: DecorationImage(
-                image: AssetImage(item.imageUrl),
+                image: NetworkImage(item.imageUrl),
                 fit: BoxFit.cover,
               ),
             ),
           ),
           const SizedBox(width: 16),
-
-          // Food details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   item.name,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -316,9 +329,8 @@ class DetailsPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '\$${item.prices['M']?.toStringAsFixed(2) ?? 'N/A'}',
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold),
+                  '\$${item.prices['default']?.toStringAsFixed(2) ?? 'N/A'}',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -328,10 +340,7 @@ class DetailsPage extends StatelessWidget {
     );
   }
 
-
-
-
-  Widget reviewTab() {
+  Widget _buildReviewTab() {
     return const Center(
       child: Text('Reviews coming soon!'),
     );
