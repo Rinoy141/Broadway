@@ -41,7 +41,7 @@ void main() {
       ChangeNotifierProvider(create: (context) => PasswordRecoveryProvider()),
       ChangeNotifierProvider(create: (context) => CategoryProvider()),
       ChangeNotifierProvider(create: (context) => NotificationSettings()),
-      ChangeNotifierProvider(create: (context) => LoginProvider()),
+      ChangeNotifierProvider(create: (context) => MainProvider()),
 
     ],
     child:  MyApp(),

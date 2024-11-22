@@ -1,17 +1,16 @@
+import 'package:broadway/food_app/restaurant_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providerss/app_provider.dart';
-import 'restaurant_model.dart';
-
-
 
 class RestaurantDetailsPage extends StatefulWidget {
-  final Restaurant restaurant;
+  final int restaurantId;
 
-  const RestaurantDetailsPage({Key? key, required this.restaurant}) : super(key: key);
+  const RestaurantDetailsPage({Key? key, required this.restaurantId})
+      : super(key: key);
 
   @override
-  _RestaurantDetailsPageState createState() => _RestaurantDetailsPageState();
+  State<RestaurantDetailsPage> createState() => _RestaurantDetailsPageState();
 }
 
 class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
@@ -19,45 +18,59 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<LoginProvider>(context, listen: false)
-          .fetchRestaurantMenu(widget.restaurant.id);
+      final provider = context.read<MainProvider>();
+      provider.fetchRestaurantDetails(widget.restaurantId);
+      provider.fetchRestaurantMenu(widget.restaurantId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer<LoginProvider>(
+      body: Consumer<MainProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           }
 
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                _buildHeader(context),
-                _buildTabSection(context, provider),
-              ],
-            ),
+          if (provider.restaurantDetails == null) {
+            return const Center(
+              child: Text('Restaurant details not available'),
+            );
+          }
+
+          return CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: _buildHeader(context, provider.restaurantDetails!),
+              ),
+              SliverToBoxAdapter(
+                child: _buildTabSection(context, provider),
+              ),
+            ],
           );
         },
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, Restaurant restaurant) {
     return Stack(
       children: [
+        // Background Image
         Container(
           height: MediaQuery.of(context).size.height * 0.3,
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: NetworkImage(widget.restaurant.imageUrl ?? 'placeholder_url'),
+              image: NetworkImage(restaurant.imageUrl ?? 'placeholder_url'),
               fit: BoxFit.cover,
             ),
           ),
         ),
+
+        // Gradient Overlay
         Container(
           height: MediaQuery.of(context).size.height * 0.38,
           decoration: BoxDecoration(
@@ -68,7 +81,8 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
             ),
           ),
         ),
-        // Header content
+
+        // Header Content
         Positioned(
           bottom: 0,
           left: 0,
@@ -88,7 +102,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                 Row(
                   children: [
                     Text(
-                      widget.restaurant.restaurantName,
+                      restaurant.restaurantName,
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -108,11 +122,12 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                       ),
                     ),
                     IconButton(
-                        onPressed: () {},
-                        icon: const Icon(
-                          Icons.favorite,
-                          color: Colors.orange,
-                        ))
+                      onPressed: () {},
+                      icon: const Icon(
+                        Icons.favorite,
+                        color: Colors.orange,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -122,56 +137,68 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                       'Open ',
                       style: TextStyle(color: Colors.green),
                     ),
-                    const SizedBox(
-                      width: 5,
-                    ),
-                    Text('•  ${widget.restaurant.district}'),
+                    const SizedBox(width: 5),
+                    Text('•  ${restaurant.district}'),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.star, color: Colors.amber, size: 16),
-                    Text('${widget.restaurant.averageRating}'),
+                    const Icon(Icons.star, color: Colors.amber, size: 20),
+                    Text(restaurant.averageRating?.toString() ?? 'N/A',style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
                     const SizedBox(width: 16),
-                    const Icon(Icons.access_time_filled_sharp,
-                        size: 16, color: Colors.grey),
-                    Text(widget.restaurant.distance.toString()),
+                    const Icon(Icons.location_on,
+                        size: 16),
+                    Text('${restaurant.distance} km',style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
                     const SizedBox(width: 16),
-                    const Icon(Icons.monetization_on_outlined,
-                        size: 16, color: Colors.grey),
-                    const Text('Free shipping'),
+                    const Icon(Icons.delivery_dining,
+                        size: 20,),
+                     Text(' Delivery fee \₹${restaurant.deliveryFee} ',style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
                   ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Container(
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8),
+                // Promo code section
+                if (restaurant.promoCodes.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.discount_outlined, color: Colors.orange),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Save ₹${restaurant.promoCodes[0].value.toStringAsFixed(0)} with code ${restaurant.promoCodes[0].code}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: const Text('Save \$15.00 with code Total Dish'),
                   ),
-                ),
+                ],
               ],
             ),
           ),
         ),
-
       ],
     );
   }
 
-  Widget _buildTabSection(BuildContext context, LoginProvider provider) {
+  Widget _buildTabSection(BuildContext context, MainProvider provider) {
     return DefaultTabController(
       length: 2,
       child: Column(
         children: [
-          const TabBar(
+          const TabBar(indicatorColor: Colors.blue,labelColor: Colors.blue,indicatorSize: TabBarIndicatorSize.tab,labelStyle: TextStyle(fontWeight: FontWeight.bold,fontSize: 15),
             tabs: [
-              Tab(text: 'Delivery'),
+              Tab(text: 'Delivery',),
               Tab(text: 'Review'),
             ],
           ),
@@ -189,7 +216,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
     );
   }
 
-  Widget _buildDeliveryTab(BuildContext context, LoginProvider provider) {
+  Widget _buildDeliveryTab(BuildContext context, MainProvider provider) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,9 +244,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
         itemBuilder: (context, index) {
           final item = popularItems[index];
           return InkWell(
-            onTap: () {
-
-            },
+            onTap: () {},
             child: _buildPopularItemWidget(item, context),
           );
         },
@@ -228,10 +253,8 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
   }
 
   Widget _buildPopularItemWidget(PopularItem item, BuildContext context) {
-
     return Container(
       width: MediaQuery.of(context).size.width * 0.4,
-
       margin: const EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,7 +276,8 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
           ),
           Row(
             children: [
-              Text('\$${item.price.toStringAsFixed(2)} ', style: const TextStyle(color: Colors.green)),
+              Text('\$${item.price.toStringAsFixed(2)} ',
+                  style: const TextStyle(color: Colors.green)),
               Text('• ${item.category}')
             ],
           ),
@@ -283,9 +307,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
               itemBuilder: (context, index) {
                 final item = category.items[index];
                 return InkWell(
-                  onTap: () {
-
-                  },
+                  onTap: () {},
                   child: _buildFoodItemWidget(item),
                 );
               },
@@ -297,7 +319,6 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
   }
 
   Widget _buildFoodItemWidget(Item item) {
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(

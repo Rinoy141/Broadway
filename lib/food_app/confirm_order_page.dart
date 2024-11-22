@@ -126,7 +126,7 @@ class ConfirmOrderPage extends StatelessWidget {
   }
 
   Widget _buildOrderItem(BuildContext context) {
-    final restaurantProvider = context.watch<LoginProvider>();
+    final restaurantProvider = context.watch<MainProvider>();
     final name = popularItem?.name ?? item?.name ?? '';
     final imageUrl = popularItem?.imageUrl ?? item?.imageUrl ?? '';
      // final price = popularItem != null

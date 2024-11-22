@@ -158,36 +158,31 @@ class RegistrationProvider with ChangeNotifier {
 
 ///LOGIN
 
-
-
-
-
-
-
-
-
-class LoginProvider extends ChangeNotifier {
+class MainProvider extends ChangeNotifier {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
-
   late final Dio _dio;
   PersistCookieJar? _cookieJar;
 
   List<NearbyRestaurant> _nearbyRestaurants = [];
-  List<NearbyRestaurant> get nearbyRestaurants => _nearbyRestaurants;
   List<dynamic>? _currentSearchResults;
-  List<dynamic>? get currentSearchResults => _currentSearchResults;
   List<Restaurant> _restaurants = [];
   List<PopularItem> _popularItems = [];
   List<FoodCategory> _foodCategories = [];
+  List<NearbyRestaurant> get nearbyRestaurants => _nearbyRestaurants;
+  List<dynamic>? get currentSearchResults => _currentSearchResults;
   List<Restaurant> get restaurants => _restaurants;
   List<PopularItem> get popularItems => _popularItems;
   List<FoodCategory> get foodCategories => _foodCategories;
+  Restaurant? _restaurantDetails;
+  Restaurant? get restaurantDetails => _restaurantDetails;
 
-  LoginProvider() {
+
+
+  MainProvider() {
     _dio = Dio();
     _initializeCookieJar();
     print('LoginProvider initialized');
@@ -240,38 +235,256 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
-  ///nearby
-  Future<void> fetchNearbyRestaurants() async {
+  /// Basic login authentication
+  Future<bool> login(BuildContext context) async {
+    await ensureCookieJarInitialized();
+    print('Login process started');
+
+    const url = 'http://broadway.extramindtech.com/user/login/';
+    final body = {
+      'Email': emailController.text,
+      'Password': passwordController.text,
+    };
+
     try {
-      _isLoading = true;
-      notifyListeners();
+      // Log the existing cookies before login
+      final preCookies = await getCookieString(Uri.parse(url));
+      print('Cookies before login: $preCookies');
 
-      final url = Uri.parse('http://broadway.extramindtech.com/food/nearbysearch/');
-      final cookieString = await getCookieString(url);
-
-      final response = await _dio.get(
-        url.toString(),
+      final response = await _dio.post(
+        url,
+        data: jsonEncode(body),
         options: Options(
           headers: {
+            'Content-Type': 'application/json',
+            'Cookie': preCookies,
+          },
+          validateStatus: (status) => true, // Allow all status codes for debugging
+        ),
+      );
+
+      print('Login response status: ${response.statusCode}');
+      print('Login response data: ${response.data}');
+
+      // Log the cookies after login
+      final postCookies = await getCookieString(Uri.parse(url));
+      print('Cookies after login: $postCookies');
+
+      if (response.statusCode == 200 && response.data['msg'] == 'Login Success') {
+        print('Login successful');
+
+        // Verify cookies were saved
+        final savedCookies = await _cookieJar?.loadForRequest(Uri.parse(url));
+        print('Saved cookies after login: $savedCookies');
+
+        return true;
+      } else {
+        final errorMsg = response.data['msg'] ?? 'An error occurred. Please try again later.';
+        _showErrorDialog(context, errorMsg);
+        return false;
+      }
+    } catch (e) {
+      print('Error during login: $e');
+      _showErrorDialog(context, 'An error occurred. Please try again later.');
+      return false;
+    }
+  }
+
+  /// Main login handler with navigation logic
+  Future<void> handleLogin(BuildContext context) async {
+    if (!context.mounted) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final loginSuccess = await login(context);
+      print('Login success: $loginSuccess');
+
+      if (loginSuccess) {
+        // Check if profile is set
+        final hasProfile = await isProfileSet();
+        print('Has profile: $hasProfile');
+
+        if (!context.mounted) return;
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login Successful')),
+        );
+
+        if (hasProfile) {
+          print('Profile exists, navigating to BestPartnersPage');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) =>  FoodDeliveryHomePage()),
+          );
+        } else {
+          print('Profile not set, navigating to EditProfilePage');
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) =>  EditProfilePage()),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error in handleLogin: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login Failed')),
+        );
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Add or Update User Address
+  Future<bool> addOrUpdateAddress({
+    required String country,
+    required String address,
+    required String district,
+    required String place,
+    required String gender,
+  }) async
+  {
+    await ensureCookieJarInitialized();
+
+    const url = 'http://broadway.extramindtech.com/user/addaddress/';
+    final body = {
+      'Country': country,
+      'Address': address,
+      'District': district,
+      'Place': place,
+      'Gender': gender,
+    };
+
+    print('Request Body for Add/Update Address: $body');
+
+    try {
+      final cookieString = await getCookieString(Uri.parse(url));
+      print('Cookies for address update: $cookieString');
+
+      final response = await _dio.post(
+        url,
+        data: jsonEncode(body),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
             'Cookie': cookieString,
-            'Accept': 'application/json',
           },
         ),
       );
 
-      if (response.statusCode == 200) {
-        // Directly parse the response data as a list when it starts with [ ]
-        final List<dynamic> nearbyRestaurantsJson = response.data;
+      print('Add/Update Address response status: ${response.statusCode}');
+      print('Add/Update Address response data: ${response.data}');
 
-        _nearbyRestaurants = nearbyRestaurantsJson
-            .map((json) => NearbyRestaurant.fromJson(json))
-            .toList();
+      if (response.statusCode == 200 &&
+          (response.data['msg'] == 'Data saved Successfully' ||
+              response.data['msg']?.toString().toLowerCase().contains('success') == true)) {
+        print('Successfully added/updated address: ${response.data['msg']}');
+        return true;
       } else {
-        throw Exception('Failed to fetch nearby restaurants');
+        print('Failed to add/update address: ${response.data['msg']}');
+        return false;
       }
     } catch (e) {
-      print('Error fetching nearby restaurants: $e');
-      _nearbyRestaurants = [];
+      print('Error during add/update address: $e');
+      return false;
+    }
+  }
+
+  /// Check if user profile is set
+  Future<bool> isProfileSet() async {
+    await ensureCookieJarInitialized();
+
+    try {
+      const url = 'http://broadway.extramindtech.com/user/profile_view/';
+
+      // Log cookies before making the request
+      final cookieString = await getCookieString(Uri.parse(url));
+      print('Cookies before profile check: $cookieString');
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieString,
+          },
+          validateStatus: (status) => true, // Allow all status codes for debugging
+        ),
+      );
+
+      print('Profile check response status: ${response.statusCode}');
+      print('Profile check response data: ${response.data}');
+
+      if (response.statusCode == 200 && response.data != null) {
+        final profileData = response.data;
+        if (profileData is Map) {
+          final hasProfile = profileData['Address'] != null &&
+              profileData['District'] != null &&
+              profileData['Place'] != null &&
+              profileData['Address'].toString().isNotEmpty &&
+              profileData['District'].toString().isNotEmpty &&
+              profileData['Place'].toString().isNotEmpty;
+
+          print('Profile check result: hasProfile=$hasProfile');
+          print('Profile data: $profileData');
+          return hasProfile;
+        }
+      }
+      print('Profile check failed: Invalid response format or status code');
+      return false;
+    } catch (e) {
+      print('Error checking profile status: $e');
+      return false;
+    }
+  }
+
+  /// Handle profile update and navigation
+  Future<void> handleAddressUpdate({
+    required BuildContext context,
+    required String country,
+    required String address,
+    required String district,
+    required String place,
+    required String gender,
+  }) async
+  {
+    if (!context.mounted) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final success = await addOrUpdateAddress(
+        country: country,
+        address: address,
+        district: district,
+        place: place,
+        gender: gender,
+      );
+
+      if (!context.mounted) return;
+
+      if (success) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully')),
+        );
+
+        // Navigate to BestPartnersPage
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) =>  FoodDeliveryHomePage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update profile')),
+        );
+      }
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -346,299 +559,40 @@ class LoginProvider extends ChangeNotifier {
       throw Exception('Failed to fetch search results');
     }
   }
-  // Future<List<dynamic>> searchMenuAndRestaurants(String query) async {
-  //   try {
-  //     await ensureCookieJarInitialized();
-  //
-  //     final url = Uri.parse('http://broadway.extramindtech.com/food/getbysearch/');
-  //     final cookieString = await getCookieString(url);
-  //
-  //     print('Searching for: $query');
-  //     print('Request URL: $url');
-  //     print('Request Cookies: $cookieString');
-  //
-  //     final response = await _dio.post(
-  //       url.toString(),
-  //       data: jsonEncode({"Search": query}),
-  //       options: Options(
-  //         headers: {
-  //           'Content-Type': 'application/json',
-  //           'Cookie': cookieString,
-  //           'Accept': 'application/json',
-  //         },
-  //       ),
-  //     );
-  //
-  //     print('Search response status: ${response.statusCode}');
-  //     print('Search response data: ${response.data}');
-  //
-  //     if (response.statusCode == 200) {
-  //       final Map<String, dynamic> responseData = response.data;
-  //       final List<dynamic> results = [
-  //         ...?responseData['menu_items'],
-  //         ...?responseData['restaurants']
-  //       ];
-  //       return results;
-  //     } else {
-  //       throw Exception('Failed to search menu and restaurants');
-  //     }
-  //   } catch (e) {
-  //     print('Error searching menu and restaurants: $e');
-  //     throw Exception('Failed to search menu and restaurants');
-  //   }
-  // }
 
-
-
-  /// Check if user profile is set
-  Future<bool> isProfileSet() async {
-    await ensureCookieJarInitialized();
-
+///fetch restaurants with id
+  Future<void> fetchRestaurantDetails(int restaurantId) async {
     try {
-      const url = 'http://broadway.extramindtech.com/user/profile_view/';
+      _isLoading = true;
+      notifyListeners();
 
-      // Log cookies before making the request
-      final cookieString = await getCookieString(Uri.parse(url));
-      print('Cookies before profile check: $cookieString');
+      final url = Uri.parse('http://broadway.extramindtech.com/food/restaurants/$restaurantId');
+      final cookieString = await getCookieString(url);
 
       final response = await _dio.get(
-        url,
+        url.toString(),
         options: Options(
           headers: {
-            'Content-Type': 'application/json',
             'Cookie': cookieString,
+            'Accept': 'application/json',
           },
-          validateStatus: (status) => true, // Allow all status codes for debugging
         ),
       );
 
-      print('Profile check response status: ${response.statusCode}');
-      print('Profile check response data: ${response.data}');
-
-      if (response.statusCode == 200 && response.data != null) {
-        final profileData = response.data;
-        if (profileData is Map) {
-          final hasProfile = profileData['Address'] != null &&
-              profileData['District'] != null &&
-              profileData['Place'] != null &&
-              profileData['Address'].toString().isNotEmpty &&
-              profileData['District'].toString().isNotEmpty &&
-              profileData['Place'].toString().isNotEmpty;
-
-          print('Profile check result: hasProfile=$hasProfile');
-          print('Profile data: $profileData');
-          return hasProfile;
-        }
-      }
-      print('Profile check failed: Invalid response format or status code');
-      return false;
-    } catch (e) {
-      print('Error checking profile status: $e');
-      return false;
-    }
-  }
-
-  /// Main login handler with navigation logic
-  Future<void> handleLogin(BuildContext context) async {
-    if (!context.mounted) return;
-
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final loginSuccess = await login(context);
-      print('Login success: $loginSuccess');
-
-      if (loginSuccess) {
-        // Check if profile is set
-        final hasProfile = await isProfileSet();
-        print('Has profile: $hasProfile');
-
-        if (!context.mounted) return;
-
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login Successful')),
-        );
-
-        if (hasProfile) {
-          print('Profile exists, navigating to BestPartnersPage');
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) =>  FoodDeliveryHomePage()),
-          );
+      if (response.statusCode == 200) {
+        final List<dynamic> restaurantDetailsJson = response.data;
+        if (restaurantDetailsJson.isNotEmpty) {
+          _restaurantDetails = Restaurant.fromJson(restaurantDetailsJson[0]);
+          _isLoading = false;
+          notifyListeners();
         } else {
-          print('Profile not set, navigating to EditProfilePage');
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) =>  EditProfilePage()),
-          );
+          throw Exception('No restaurant details found');
         }
+      } else {
+        throw Exception('Failed to fetch restaurant details');
       }
     } catch (e) {
-      print('Error in handleLogin: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login Failed')),
-        );
-      }
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  /// Basic login authentication
-  Future<bool> login(BuildContext context) async {
-    await ensureCookieJarInitialized();
-    print('Login process started');
-
-    const url = 'http://broadway.extramindtech.com/user/login/';
-    final body = {
-      'Email': emailController.text,
-      'Password': passwordController.text,
-    };
-
-    try {
-      // Log the existing cookies before login
-      final preCookies = await getCookieString(Uri.parse(url));
-      print('Cookies before login: $preCookies');
-
-      final response = await _dio.post(
-        url,
-        data: jsonEncode(body),
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': preCookies,
-          },
-          validateStatus: (status) => true, // Allow all status codes for debugging
-        ),
-      );
-
-      print('Login response status: ${response.statusCode}');
-      print('Login response data: ${response.data}');
-
-      // Log the cookies after login
-      final postCookies = await getCookieString(Uri.parse(url));
-      print('Cookies after login: $postCookies');
-
-      if (response.statusCode == 200 && response.data['msg'] == 'Login Success') {
-        print('Login successful');
-
-        // Verify cookies were saved
-        final savedCookies = await _cookieJar?.loadForRequest(Uri.parse(url));
-        print('Saved cookies after login: $savedCookies');
-
-        return true;
-      } else {
-        final errorMsg = response.data['msg'] ?? 'An error occurred. Please try again later.';
-        _showErrorDialog(context, errorMsg);
-        return false;
-      }
-    } catch (e) {
-      print('Error during login: $e');
-      _showErrorDialog(context, 'An error occurred. Please try again later.');
-      return false;
-    }
-  }
-
-  /// Add or Update User Address
-  Future<bool> addOrUpdateAddress({
-    required String country,
-    required String address,
-    required String district,
-    required String place,
-    required String gender,
-  }) async {
-    await ensureCookieJarInitialized();
-
-    const url = 'http://broadway.extramindtech.com/user/addaddress/';
-    final body = {
-      'Country': country,
-      'Address': address,
-      'District': district,
-      'Place': place,
-      'Gender': gender,
-    };
-
-    print('Request Body for Add/Update Address: $body');
-
-    try {
-      final cookieString = await getCookieString(Uri.parse(url));
-      print('Cookies for address update: $cookieString');
-
-      final response = await _dio.post(
-        url,
-        data: jsonEncode(body),
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-          },
-        ),
-      );
-
-      print('Add/Update Address response status: ${response.statusCode}');
-      print('Add/Update Address response data: ${response.data}');
-
-      if (response.statusCode == 200 &&
-          (response.data['msg'] == 'Data saved Successfully' ||
-              response.data['msg']?.toString().toLowerCase().contains('success') == true)) {
-        print('Successfully added/updated address: ${response.data['msg']}');
-        return true;
-      } else {
-        print('Failed to add/update address: ${response.data['msg']}');
-        return false;
-      }
-    } catch (e) {
-      print('Error during add/update address: $e');
-      return false;
-    }
-  }
-
-  /// Handle profile update and navigation
-  Future<void> handleAddressUpdate({
-    required BuildContext context,
-    required String country,
-    required String address,
-    required String district,
-    required String place,
-    required String gender,
-  }) async {
-    if (!context.mounted) return;
-
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final success = await addOrUpdateAddress(
-        country: country,
-        address: address,
-        district: district,
-        place: place,
-        gender: gender,
-      );
-
-      if (!context.mounted) return;
-
-      if (success) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
-        );
-
-        // Navigate to BestPartnersPage
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) =>  FoodDeliveryHomePage()),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update profile')),
-        );
-      }
-    } finally {
+      print('Error fetching restaurant details: $e');
       _isLoading = false;
       notifyListeners();
     }
@@ -681,6 +635,38 @@ class LoginProvider extends ChangeNotifier {
       throw Exception('Failed to fetch restaurants');
     }
   }
+  /// Best rest
+  Future<List<BestSeller>> fetchBestSellers(BuildContext context) async {
+    try {
+      await ensureCookieJarInitialized();
+
+      final url = Uri.parse('http://broadway.extramindtech.com/food/bestsellers/');
+      final cookieString = await getCookieString(url);
+
+      final response = await _dio.get(
+        url.toString(),
+        options: Options(
+          headers: {
+            'Cookie': cookieString,
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = response.data;
+        final List<dynamic> bestSellersJson = data['Best sellers'];
+        return bestSellersJson.map((json) => BestSeller.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to fetch best sellers');
+      }
+    } catch (e) {
+      print('Error fetching best sellers: $e');
+      throw Exception('Failed to fetch best sellers');
+    }
+  }
+
+
 
 /// Fetch Restaurant Menu
 
@@ -723,8 +709,43 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
+  ///nearby
+  Future<void> fetchNearbyRestaurants() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
 
+      final url = Uri.parse('http://broadway.extramindtech.com/food/nearbysearch/');
+      final cookieString = await getCookieString(url);
 
+      final response = await _dio.get(
+        url.toString(),
+        options: Options(
+          headers: {
+            'Cookie': cookieString,
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // Directly parse the response data as a list when it starts with [ ]
+        final List<dynamic> nearbyRestaurantsJson = response.data;
+
+        _nearbyRestaurants = nearbyRestaurantsJson
+            .map((json) => NearbyRestaurant.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('Failed to fetch nearby restaurants');
+      }
+    } catch (e) {
+      print('Error fetching nearby restaurants: $e');
+      _nearbyRestaurants = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   /// Logout method
   Future<void> logout() async {
@@ -762,11 +783,6 @@ class LoginProvider extends ChangeNotifier {
     super.dispose();
   }
 }
-
-
-
-
-
 
 ///FORGOT PASSWORD
 class ForgotPasswordProvider extends ChangeNotifier {
@@ -885,69 +901,9 @@ class ForgotPasswordProvider extends ChangeNotifier {
   }
 }
 
-///EDIT PRFILE
 
-// class RestaurantProvider with ChangeNotifier {
-//   final Dio _dio = Dio();
-//   List<Restaurant> _restaurants = [];
-//   List<PopularItem> _popularItems = [];
-//   List<FoodCategory> _foodCategories = [];
-//
-//
-//   bool _isLoading = false;
-//
-//   List<Restaurant> get restaurants => _restaurants;
-//   List<PopularItem> get popularItems => _popularItems;
-//   List<FoodCategory> get foodCategories => _foodCategories;
-//
-//
-//   bool get isLoading => _isLoading;
-//
-//   Future<List<Restaurant>> fetchRestaurants(BuildContext context) async {
-//     try {
-//       _isLoading = true;
-//       notifyListeners();
-//
-//       final url = Uri.parse('http://broadway.extramindtech.com/food/restaurants/');
-//       final cookieString = await _getCookieString(url);
-//
-//       final response = await _dio.get(
-//         url.toString(),
-//         options: Options(
-//           headers: {
-//             'Cookie': cookieString,
-//             'Accept': 'application/json',
-//           },
-//         ),
-//       );
-//
-//       if (response.statusCode == 200) {
-//         final List<dynamic> restaurantsJson = response.data;
-//         _restaurants = restaurantsJson.map((json) => Restaurant.fromJson(json)).toList();
-//         _isLoading = false;
-//         notifyListeners();
-//         return _restaurants;
-//       } else {
-//         throw Exception('Failed to fetch restaurants');
-//       }
-//     } catch (e) {
-//       print('Error fetching restaurants: $e');
-//       _isLoading = false;
-//       notifyListeners();
-//       throw Exception('Failed to fetch restaurants');
-//     }
-//   }
-//
-//
-//
-//
-//
-//   Future<String> _getCookieString(Uri url) async {
-//     // Implement your cookie retrieval logic here
-//     // This is a placeholder and should be replaced with your actual authentication method
-//     return 'your_cookie_string';
-//   }
-// }
+
+
 
 
 

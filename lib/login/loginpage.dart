@@ -15,7 +15,7 @@ class LoginPage extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return ChangeNotifierProvider(
-      create: (_) => LoginProvider(),
+      create: (_) => MainProvider(),
       child: Scaffold(
         body: SingleChildScrollView(
           child: SizedBox(
@@ -28,7 +28,7 @@ class LoginPage extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.all(24.0),
-                  child: Consumer<LoginProvider>(
+                  child: Consumer<MainProvider>(
                     builder: (context, loginProvider, child) => Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

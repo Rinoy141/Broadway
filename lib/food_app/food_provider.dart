@@ -86,7 +86,7 @@ class RatingProvider with ChangeNotifier {
 }
 class SearchModel extends ChangeNotifier {
   // Reference to RestaurantProvider to access the list of restaurants
-  final LoginProvider _loginProvider;
+  final MainProvider _loginProvider;
   List<Restaurant> _restaurants = [];
   List<Restaurant> _filteredRestaurants = [];
 

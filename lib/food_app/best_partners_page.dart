@@ -4,25 +4,25 @@ import 'package:provider/provider.dart';
 
 import '../providerss/app_provider.dart';
 import 'food_details_page.dart';
+
 class BestPartnersPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => LoginProvider(),
-      child: Consumer<LoginProvider>(
-        builder: (context, loginProvider, _) =>
-            _buildBestPartnersSection(context, loginProvider),
+      create: (_) => MainProvider(),
+      child: Consumer<MainProvider>(
+        builder: (context, mainProvider, _) =>
+            _buildBestPartnersSection(context, mainProvider),
       ),
     );
   }
 
-  Widget _buildBestPartnersSection(BuildContext context, LoginProvider loginProvider) {
-    return FutureBuilder<List<Restaurant>>(
-      future: loginProvider.fetchRestaurants(context),
+  Widget _buildBestPartnersSection(BuildContext context, MainProvider mainProvider) {
+    return FutureBuilder<List<BestSeller>>(
+      future: mainProvider.fetchBestSellers(context),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
           final restaurants = snapshot.data!;
-          print('Received ${restaurants.length} restaurants from API');
           return Container(
             margin: const EdgeInsets.all(8),
             child: Padding(
@@ -57,7 +57,16 @@ class BestPartnersPage extends StatelessWidget {
                       itemCount: restaurants.length,
                       itemBuilder: (context, index) {
                         final restaurant = restaurants[index];
-                        print('Displaying restaurant: ${restaurant.restaurantName}');
+                        // Find the first active promo
+                        BestSellerPromo? activePromo;
+                        if (restaurant.bestSellers.isNotEmpty) {
+                          final now = DateTime.now();
+                          activePromo = restaurant.bestSellers.firstWhere(
+                                (promo) => promo.startDate.isBefore(now) && promo.endDate.isAfter(now),
+                            orElse: () => restaurant.bestSellers.first,
+                          );
+                        }
+
                         return Material(
                           color: Colors.transparent,
                           child: InkWell(
@@ -65,8 +74,8 @@ class BestPartnersPage extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      RestaurantDetailsPage(restaurant: restaurant),
+                                    builder: (context) =>
+                                        RestaurantDetailsPage(restaurantId: restaurant.id)
                                 ),
                               );
                             },
@@ -80,9 +89,8 @@ class BestPartnersPage extends StatelessWidget {
                                     children: [
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
-                                        child: restaurant.imageUrl != null
-                                            ? Image.network(
-                                          restaurant.imageUrl!,
+                                        child: Image.network(
+                                          restaurant.image,
                                           height: MediaQuery.of(context).size.height * 0.135,
                                           width: MediaQuery.of(context).size.width * 0.64,
                                           fit: BoxFit.cover,
@@ -94,61 +102,33 @@ class BestPartnersPage extends StatelessWidget {
                                               fit: BoxFit.cover,
                                             );
                                           },
-                                        )
-                                            : Image.asset(
-                                          'assets/placeholder.png',
-                                          height: MediaQuery.of(context).size.height * 0.135,
-                                          width: MediaQuery.of(context).size.width * 0.64,
-                                          fit: BoxFit.cover,
                                         ),
                                       ),
-                                      // Positioned(
-                                      //   top: 8,
-                                      //   right: 8,
-                                      //   child: Container(
-                                      //     padding: const EdgeInsets.symmetric(
-                                      //       horizontal: 8,
-                                      //       vertical: 4,
-                                      //     ),
-                                      //     decoration: BoxDecoration(
-                                      //       color: restaurant.isOpen
-                                      //           ? Colors.green.withOpacity(0.9)
-                                      //           : Colors.red.withOpacity(0.9),
-                                      //       borderRadius: BorderRadius.circular(4),
-                                      //     ),
-                                      //     child: Text(
-                                      //       restaurant.isOpen ? 'Open' : 'Closed',
-                                      //       style: const TextStyle(
-                                      //         color: Colors.white,
-                                      //         fontSize: 12,
-                                      //         fontWeight: FontWeight.bold,
-                                      //       ),
-                                      //     ),
-                                      //   ),
-                                      // ),
-
                                     ],
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     restaurant.restaurantName,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-
                                   RichText(
                                     text: TextSpan(
                                       children: [
                                         TextSpan(
-                                          text: restaurant.isOpen ? "Open" : "Closed",
+                                          text: restaurant.status,
                                           style: TextStyle(
-                                            color: restaurant.isOpen ? Colors.green : Colors.red,
-                                            fontWeight: FontWeight.bold, // Optional emphasis
+                                              color: restaurant.status.toLowerCase() == "open"
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15
                                           ),
                                         ),
                                         TextSpan(
-                                          text: ' - ${restaurant.place}, ${restaurant.district}',
-                                          style: const TextStyle(
+                                          text: ' - ${restaurant.district}',
+                                          style: const TextStyle(fontWeight:FontWeight.w600,
+                                            fontSize: 15,
                                             color: Colors.grey,
                                           ),
                                         ),
@@ -156,8 +136,6 @@ class BestPartnersPage extends StatelessWidget {
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-
-
                                   Row(
                                     children: [
                                       const Icon(
@@ -166,10 +144,24 @@ class BestPartnersPage extends StatelessWidget {
                                           size: 16
                                       ),
                                       Expanded(
-                                        child: Text(
-                                          '${restaurant.averageRating ?? 'N/A'} · ${restaurant.distance} km · ${restaurant.deliveryFee}',
+                                        child: Text.rich(
+                                          TextSpan(
+                                            children: [
+                                              TextSpan(
+                                                text: '${restaurant.rating} · ${restaurant.distance} km · Delivery fee ₹${ restaurant.deliveryFee}',
+                                                style: const TextStyle(fontSize: 10,color: Colors.grey,fontWeight:FontWeight.w600,),
+                                              ),
+                                              if (activePromo != null) TextSpan(
+                                                text: ' · ${activePromo.code} ${activePromo.value.toStringAsFixed(0)}% OFF',
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.green,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(fontSize: 12),
                                           maxLines: 1,
                                         ),
                                       ),
@@ -188,12 +180,10 @@ class BestPartnersPage extends StatelessWidget {
             ),
           );
         } else if (snapshot.hasError) {
-          print('Error fetching restaurants: ${snapshot.error}');
           return Center(
             child: Text('Error: ${snapshot.error}'),
           );
         } else {
-          print('Loading restaurants...');
           return const Center(
             child: CircularProgressIndicator(),
           );

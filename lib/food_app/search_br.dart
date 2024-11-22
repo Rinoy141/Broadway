@@ -1,123 +1,157 @@
-import 'package:broadway/food_app/restaurant_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providerss/app_provider.dart';
+
+
 import 'food_details_page.dart';
+import 'restaurant_model.dart';
 
 class SearchPage extends StatefulWidget {
+  const SearchPage({Key? key}) : super(key: key);
+
   @override
   _SearchPageState createState() => _SearchPageState();
 }
 
 class _SearchPageState extends State<SearchPage> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => LoginProvider(),
-      child: Consumer<LoginProvider>(
-        builder: (context, loginProvider, _) => Scaffold(
-          appBar: AppBar(
-            title: TextField(
-              autofocus: true,
-              onChanged: (query) => loginProvider.searchMenuAndRestaurants(query),
-              decoration: const InputDecoration(
-                hintText: 'Search...',
-                prefixIcon: Icon(Icons.search),
-                border: InputBorder.none,
-              ),
-            ),
+    return Scaffold(
+      appBar: AppBar(
+        title: TextField(
+          controller: _searchController,
+          autofocus: true,
+          onChanged: (query) {
+            context.read<MainProvider>().searchMenuAndRestaurants(query);
+          },
+          decoration: const InputDecoration(
+            hintText: 'Search restaurants or dishes...',
+            prefixIcon: Icon(Icons.search),
+            border: InputBorder.none,
           ),
-          body: _buildSearchResults(context, loginProvider),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              _searchController.clear();
+              context.read<MainProvider>().searchMenuAndRestaurants('');
+            },
+          ),
+        ],
+      ),
+      body: Consumer<MainProvider>(
+        builder: (context, mainProvider, child) {
+          // Handle different search states
+          if (mainProvider.currentSearchResults == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final searchResults = mainProvider.currentSearchResults ?? [];
+
+          if (searchResults.isEmpty) {
+            return const Center(
+              child: Text('No results found'),
+            );
+          }
+
+          return ListView.builder(
+            itemCount: searchResults.length,
+            itemBuilder: (context, index) {
+              final item = searchResults[index];
+
+              // Determine if it's a menu item or a restaurant
+              final isMenuItem = item['Item'] != null;
+              final isRestaurant = item['Restaurant_Name'] != null;
+
+              return ListTile(
+                leading: _buildLeadingImage(item, isMenuItem, isRestaurant),
+                title: Text(
+                  isMenuItem
+                      ? '${item['Item'] ?? 'Unknown'} (${item['Restaurant_Name'] ?? 'Unknown Restaurant'})'
+                      : item['Restaurant_Name'] ?? 'Unknown',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  isMenuItem
+                      ? '${item['Category'] ?? ''} • \₹${item['Price'] ?? ''}'
+                      : '${item['District'] ?? ''} ${item['Place'] != null ? '• ${item['Place']}' : ''}',
+                ),
+                onTap: () => _navigateToRestaurantDetails(context, mainProvider, item, isMenuItem),
+              );
+            },
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSearchResults(BuildContext context, LoginProvider loginProvider) {
-    final searchResults = loginProvider.currentSearchResults ?? [];
+  Widget _buildLeadingImage(dynamic item, bool isMenuItem, bool isRestaurant) {
+    String? imageUrl;
 
-    if (loginProvider.currentSearchResults == null) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+    if (isMenuItem) {
+      imageUrl = item['Image'] as String?;
+    } else if (isRestaurant) {
+      imageUrl = item['ImageUrl'] as String?;
     }
 
-    if (searchResults.isEmpty) {
-      return const Center(
-        child: Text('No results found'),
-      );
-    }
-
-    return ListView.builder(
-      itemCount: searchResults.length,
-      itemBuilder: (context, index) {
-        final item = searchResults[index];
-        final isMenuItem = item.containsKey('Item');
-
-        return ListTile(
-          leading: item['Image'] != null
-              ? Image.network(
-            item['Image'],
-            width: 50,
-            height: 50,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(
-                isMenuItem ? Icons.fastfood : Icons.restaurant,
-                color: Theme.of(context).primaryColor,
-              );
-            },
-          )
-              : Icon(
-            isMenuItem ? Icons.fastfood : Icons.restaurant,
-            color: Theme.of(context).primaryColor,
-          ),
-          title: Text(
-            isMenuItem
-                ? '${item['Item']} (${item['Restaurant_Name']})'
-                : (item['Restaurant_Name'] ?? 'Unknown'),
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text(
-            isMenuItem
-                ? '${item['Category'] ?? ''} • ₹${item['Price'] ?? ''}'
-                : '${item['District'] ?? ''} ${item['Place'] != null ? '• ${item['Place']}' : ''}',
-          ),
-          onTap: () => _navigateToRestaurantDetails(context, item),
+    return imageUrl != null
+        ? Image.network(
+      imageUrl,
+      width: 50,
+      height: 50,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Icon(
+          isMenuItem ? Icons.fastfood : Icons.restaurant,
+          color: Theme.of(context).primaryColor,
         );
       },
+    )
+        : Icon(
+      isMenuItem ? Icons.fastfood : Icons.restaurant,
+      color: Theme.of(context).primaryColor,
     );
   }
 
-  void _navigateToRestaurantDetails(BuildContext context, dynamic item) {
-    try {
-      // Check if all required fields are present
-      final restaurant = Restaurant(
-        id: item['Restaurant_id'] ?? item['id'],
-        restaurantName: item['Restaurant_Name'] ?? 'Unknown',
-        district: item['District'] ?? 'Unknown District',
-        place: item['Place'] ?? 'Unknown Place',
-        averageRating: (item['Rating'] ?? 0).toDouble(),
-        openingTime: item['Opening_time'] ?? '00:00',
-        closingTime: item['Closing_time'] ?? '23:59',
-        distance: (item['Distance'] ?? 0).toInt(),
-        deliveryFee: item['Delivery_Fee'] ?? 'N/A',
-        promoCode: item['PromoCode'] ?? [],
-        imageUrl: item['Image'] ?? '',
-      );
+  void _navigateToRestaurantDetails(
+      BuildContext context,
+      MainProvider mainProvider,
+      dynamic item,
+      bool isMenuItem
+      ) {
+    int? restaurantId;
 
+    // Extract restaurant ID based on the type of item
+    if (isMenuItem) {
+      // For menu items, use the 'Restaurant' field which contains the restaurant ID
+      restaurantId = item['Restaurant'] as int?;
+    } else {
+      // For restaurant items, use the 'id' field
+      restaurantId = item['id'] as int?;
+    }
+
+    // Ensure restaurant ID is not null before navigating
+    if (restaurantId != null) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => RestaurantDetailsPage(restaurant: restaurant),
+          builder: (context) => RestaurantDetailsPage(restaurantId: restaurantId!),
         ),
       );
-    } catch (e) {
-      // Handle errors gracefully
+    } else {
+      // Optional: Show an error message if no restaurant ID is found
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to navigate: $e')),
+        const SnackBar(content: Text('Unable to find restaurant details')),
       );
     }
   }
 }
-

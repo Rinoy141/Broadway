@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+
+
 class Restaurant {
   final int id;
   final String restaurantName;
@@ -10,7 +12,7 @@ class Restaurant {
   final String closingTime;
   final int distance;
   final dynamic deliveryFee;
-  final List<dynamic> promoCode;
+  final List<PromoCode> promoCodes;
   final String? imageUrl;
 
   Restaurant({
@@ -23,24 +25,30 @@ class Restaurant {
     required this.closingTime,
     required this.distance,
     required this.deliveryFee,
-    required this.promoCode,
+    required this.promoCodes,
     this.imageUrl,
   });
 
   bool get isOpen {
     try {
       final now = DateTime.now();
-      final openTime = _parseTimeString(openingTime);
-      final closeTime = _parseTimeString(closingTime);
+      final openTime = parseTimeString(openingTime);
+      final closeTime = parseTimeString(closingTime);
 
       final todayOpenTime = DateTime(
-        now.year, now.month, now.day,
-        openTime.hour, openTime.minute,
+        now.year,
+        now.month,
+        now.day,
+        openTime.hour,
+        openTime.minute,
       );
 
       final todayCloseTime = DateTime(
-        now.year, now.month, now.day,
-        closeTime.hour, closeTime.minute,
+        now.year,
+        now.month,
+        now.day,
+        closeTime.hour,
+        closeTime.minute,
       );
 
       if (todayCloseTime.isBefore(todayOpenTime)) {
@@ -56,7 +64,7 @@ class Restaurant {
     }
   }
 
-  TimeOfDay _parseTimeString(String timeStr) {
+  TimeOfDay parseTimeString(String timeStr) {
     final parts = timeStr.split(':');
     return TimeOfDay(
       hour: int.parse(parts[0]),
@@ -75,11 +83,110 @@ class Restaurant {
       closingTime: json['Closing_time'],
       distance: json['distance'],
       deliveryFee: json['deliveryfee'],
-      promoCode: json['promocode'],
+      promoCodes: (json['promocode'] as List)
+          .map((promoJson) => PromoCode.fromJson(promoJson))
+          .toList(),
       imageUrl: json['image_url'],
     );
   }
 }
+class PromoCode {
+  final String code;
+  final double value;
+
+  PromoCode({
+    required this.code,
+    required this.value,
+  });
+
+  factory PromoCode.fromJson(Map<String, dynamic> json) {
+    return PromoCode(
+      code: json['code'],
+      value: json['value'],
+    );
+  }
+}
+// best_seller_model.dart
+
+class BestSeller {
+  final int id;
+  final String restaurantName;
+  final String image;
+  final String district;
+  final double rating;
+  final int distance;
+  final String status;
+  final int deliveryFee;
+  final List<BestSellerPromo> bestSellers;
+
+  BestSeller({
+    required this.id,
+    required this.restaurantName,
+    required this.image,
+    required this.district,
+    required this.rating,
+    required this.distance,
+    required this.status,
+    required this.deliveryFee,
+    required this.bestSellers,
+  });
+
+  factory BestSeller.fromJson(Map<String, dynamic> json) {
+    return BestSeller(
+      id: json['id'] ?? 0,
+      restaurantName: json['restaurant_name'] ?? '',
+      image: json['image'] != null
+          ? 'http://broadway.extramindtech.com${json['image']}'
+          : '',
+      district: json['district'] ?? '',
+      rating: (json['rating'] ?? 0).toDouble(),
+      distance: json['distance'] ?? 0,
+      status: json['status'] ?? 'Closed',
+      deliveryFee: json['delivery_fee'] ?? 0,
+      bestSellers: json['bestsellers'] != null
+          ? List<BestSellerPromo>.from(
+          json['bestsellers'].map((x) => BestSellerPromo.fromJson(x)))
+          : [],
+    );
+  }
+}
+
+class BestSellerPromo {
+  final String code;
+  final double value;
+  final DateTime startDate;
+  final DateTime endDate;
+
+  BestSellerPromo({
+    required this.code,
+    required this.value,
+    required this.startDate,
+    required this.endDate,
+  });
+
+  factory BestSellerPromo.fromJson(Map<String, dynamic> json) {
+    return BestSellerPromo(
+      code: json['Code'] ?? '',
+      value: (json['Value'] ?? 0.0).toDouble(),
+      startDate: json['Start_Date'] != null
+          ? DateTime.parse(json['Start_Date'])
+          : DateTime.now(),
+      endDate: json['End_Date'] != null
+          ? DateTime.parse(json['End_Date'])
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'Code': code,
+      'Value': value,
+      'Start_Date': startDate.toIso8601String(),
+      'End_Date': endDate.toIso8601String(),
+    };
+  }
+}
+
 
 class PopularItem {
   final int id;
@@ -153,6 +260,7 @@ class Item {
 }
 
 class NearbyRestaurant {
+  final int id;
   final String image;
   final String name;
   final String location;
@@ -162,6 +270,7 @@ class NearbyRestaurant {
   final int deliveryFee;
 
   NearbyRestaurant({
+    required this.id,
     required this.image,
     required this.name,
     required this.location,
@@ -173,6 +282,7 @@ class NearbyRestaurant {
 
   factory NearbyRestaurant.fromJson(Map<String, dynamic> json) {
     return NearbyRestaurant(
+      id: json['id']??'',
       image: json['image'] ?? '',
       name: json['restaurant'] ?? '',
       location: json['address'] ?? '',

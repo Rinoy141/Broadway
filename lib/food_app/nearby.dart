@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providerss/app_provider.dart';
+import 'food_details_page.dart';
 
 
 class NearbyRestaurantsWidget extends StatefulWidget {
@@ -21,7 +22,7 @@ class _NearbyRestaurantsWidgetState extends State<NearbyRestaurantsWidget> {
   }
 
   void _fetchRestaurantsIfNeeded() {
-    final loginProvider = Provider.of<LoginProvider>(context, listen: false);
+    final loginProvider = Provider.of<MainProvider>(context, listen: false);
     if (!_hasFetchedInitially && loginProvider.nearbyRestaurants.isEmpty) {
       loginProvider.fetchNearbyRestaurants().then((_) {
         setState(() {
@@ -33,13 +34,13 @@ class _NearbyRestaurantsWidgetState extends State<NearbyRestaurantsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LoginProvider>(
-      builder: (context, loginProvider, _) {
-        if (loginProvider.isLoading) {
+    return Consumer<MainProvider>(
+      builder: (context, mainProvider, _) {
+        if (mainProvider.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (loginProvider.nearbyRestaurants.isEmpty) {
+        if (mainProvider.nearbyRestaurants.isEmpty) {
           return const Center(
             child: Text('No nearby restaurants found.'),
           );
@@ -76,13 +77,20 @@ class _NearbyRestaurantsWidgetState extends State<NearbyRestaurantsWidget> {
                     shrinkWrap: true,
                     physics: const AlwaysScrollableScrollPhysics(),
                     scrollDirection: Axis.vertical,
-                    itemCount: loginProvider.nearbyRestaurants.length,
+                    itemCount: mainProvider.nearbyRestaurants.length,
                     itemBuilder: (context, index) {
-                      final restaurant = loginProvider.nearbyRestaurants[index];
+                      final restaurant = mainProvider.nearbyRestaurants[index];
+
                       return Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          onTap: () {
+                          onTap: () { Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RestaurantDetailsPage(restaurantId: restaurant.id),
+                            ),
+                          );
+
                             // Add navigation to restaurant details if needed
                           },
                           child: Container(

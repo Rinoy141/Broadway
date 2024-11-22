@@ -27,7 +27,7 @@ class EditProfilePageState extends State<EditProfilePage> {
     genderController = TextEditingController();
 
     // Optionally, you could populate controllers with initial data if needed
-    final provider = Provider.of<LoginProvider>(context, listen: false);
+    final provider = Provider.of<MainProvider>(context, listen: false);
     addressController.text = provider.emailController.text; // Example binding
   }
 
@@ -44,15 +44,15 @@ class EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<LoginProvider>(
-      create: (_) => LoginProvider(),
+    return ChangeNotifierProvider<MainProvider>(
+      create: (_) => MainProvider(),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Edit Profile'),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Consumer<LoginProvider>(
+          child: Consumer<MainProvider>(
             builder: (context, loginProvider, _) {
               return Form(
                 key: _formKey,
