@@ -1,515 +1,456 @@
-import 'package:broadway/food_app/restaurant_model.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:broadway/providerss/app_provider.dart';
+import 'package:broadway/food_app/restaurant_model.dart';
+import 'package:broadway/food_app/confirm_order_page.dart';
 
-import '../providerss/app_provider.dart';
-import 'food_provider.dart';
+class CartPage extends StatefulWidget {
+  const CartPage({Key? key}) : super(key: key);
 
-class ConfirmOrderPage extends StatelessWidget {
-  final PopularItem? popularItem;
-  final Item? item;
-  final double price;
-  final int quantity;
+  @override
+  _CartPageState createState() => _CartPageState();
+}
 
-  const ConfirmOrderPage({
-    Key? key,
-    this.popularItem,
-    this.item,
-    required this.price,
-    required this.quantity,
-  }) : super(key: key);
+class _CartPageState extends State<CartPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<MainProvider>(context, listen: false).fetchCartItems();
+      Provider.of<MainProvider>(context, listen: false).fetchUserProfile();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text('Confirm Order'),
+        title: const Text('My Cart', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildDeliverySection(context),
-              const SizedBox(height: 20),
-              _buildRestaurantSection(context),
-              const SizedBox(height: 20),
-              _buildVoucherContainer(),
-              const SizedBox(height: 20),
-              _buildPaymentOptions(context),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+      body: Consumer<MainProvider>(
+        builder: (context, cartProvider, child) {
+          // Loading state
+          if (cartProvider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-  Widget _buildDeliverySection(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.18,
-      width: MediaQuery.of(context).size.width * 0.95,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xffFFFFFF),
-        boxShadow: [
-          BoxShadow(
-              spreadRadius: 5, blurRadius: 10, color: Colors.grey.shade300)
-        ],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Delivery to',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.location_on, color: Colors.green),
-              ),
-              const SizedBox(width: 10),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          // Error state
+          if (cartProvider.error.isNotEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'Address',
-                    style: TextStyle(fontWeight: FontWeight.w500),
+                  const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                  Text('Error: ${cartProvider.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => cartProvider.fetchCartItems(),
+                    child: const Text('Retry'),
                   ),
-                  SizedBox(height: 5),
-                  Text('1.5 km', style: TextStyle(color: Colors.grey)),
                 ],
               ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+            );
+          }
 
-  Widget _buildRestaurantSection(BuildContext context) {
-    final name = popularItem?.name ?? item?.name ?? '';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xffFFFFFF),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-              spreadRadius: 5, blurRadius: 10, color: Colors.grey.shade300),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(name,
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          _buildOrderItem(context),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOrderItem(BuildContext context) {
-    final restaurantProvider = context.watch<MainProvider>();
-    final name = popularItem?.name ?? item?.name ?? '';
-    final imageUrl = popularItem?.imageUrl ?? item?.imageUrl ?? '';
-     // final price = popularItem != null
-     //    ? popularItem!.price
-     //    : item?.prices[restaurantProvider.selectedSize] ?? 0.0;
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Row(
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Image.asset(imageUrl, fit: BoxFit.cover),
+          // Empty cart state
+          if (cartProvider.cartItems.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.fastfood_outlined),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Your cart is empty',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const Text(
+                    'Looks like you haven\'t added anything to your cart yet',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(name,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(
-                      height: 5,
-                    ),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(20),
+            );
+          }
+
+          Widget _buildDeliverySection(BuildContext context) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.13,
+              width: MediaQuery.of(context).size.width * 0.95,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xffFFFFFF),
+                boxShadow: [
+                  BoxShadow(
+                      spreadRadius: 5, blurRadius: 10, color: Colors.grey.shade300)
+                ],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Delivery to',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.location_on, color: Colors.green),
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${cartProvider.userProfile?.address}',
+                            style: TextStyle(fontWeight: FontWeight.w500),
                           ),
+                          SizedBox(height: 5),
+                          Text('1.5 km', style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }
+
+          Widget _cartitemslist(){
+            return Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                itemCount: cartProvider.cartItems.length,
+                itemBuilder: (context, index) {
+                  final cartItem = cartProvider.cartItems[index];
+                  final onQuantityChanged = (int newQuantity) {
+                    if (newQuantity > 0) {
+                      cartProvider.updateCartItemQuantity(cartItem.id, newQuantity);
+                    } else {
+                      cartProvider.removeCartItem(cartItem.id);
+                    }
+                  };
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Image.network(cartItem.menuItems.image, fit: BoxFit.cover),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(cartItem.itemName,
+                                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  const SizedBox(
+                                    height: 5,
+                                  ),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[100],
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              decoration: const BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: Color(0xffC1C7D0)),
+                                              height:
+                                              MediaQuery.of(context).size.height * 0.025,
+                                              child: IconButton(
+                                                icon: const Icon(
+                                                  Icons.remove,
+                                                  size: 10,
+                                                  color: Colors.white,
+                                                ),
+                                                onPressed: () => onQuantityChanged(cartItem.quantity - 1),
+                                              ),
+                                            ),
+                                            Text('${cartItem.quantity}',
+                                                style: const TextStyle(
+                                                    fontWeight: FontWeight.bold)),
+                                            const SizedBox(
+                                              width: 5,
+                                            ),
+                                            Container(
+                                              decoration: const BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: Color(0xffC1C7D0)),
+                                              height:
+                                              MediaQuery.of(context).size.height * 0.025,
+                                              width: MediaQuery.of(context).size.width * 0.1,
+                                              child: IconButton(
+                                                icon: const Icon(
+                                                  Icons.add,
+                                                  size: 10,
+                                                  color: Colors.white,
+                                                ),
+                                                onPressed: () => onQuantityChanged(cartItem.quantity + 1),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            );
+          }
+
+          Widget _buildRestaurantSection(BuildContext context) {
+            return Container(
+              width: MediaQuery.of(context).size.width,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              margin: EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xffFFFFFF),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                      spreadRadius: 5,
+                      blurRadius: 5,
+                      color: Colors.grey.shade300
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                      'Restaurant',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                  ),
+                  const SizedBox(height: 10),
+
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.3,
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      itemCount: cartProvider.cartItems.length,
+                      itemBuilder: (context, index) {
+                        final cartItem = cartProvider.cartItems[index];
+                        final onQuantityChanged = (int newQuantity) {
+                          if (newQuantity > 0) {
+                            cartProvider.updateCartItemQuantity(cartItem.id, newQuantity);
+                          } else {
+                            cartProvider.removeCartItem(cartItem.id);
+                          }
+                        };
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
                           child: Row(
                             children: [
                               Container(
-                                decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Color(0xffC1C7D0)),
-                                height:
-                                    MediaQuery.of(context).size.height * 0.025,
-                                // child: IconButton(
-                                //   icon: const Icon(
-                                //     Icons.remove,
-                                //     size: 10,
-                                //     color: Colors.white,
-                                //   ),
-                                //   // onPressed: () =>
-                                //   //     restaurantProvider.updateQuantity(-1),
-                                // ),
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Image.network(cartItem.menuItems.image, fit: BoxFit.cover),
                               ),
-                              // Text('${restaurantProvider.quantity}',
-                              //     style: const TextStyle(
-                              //         fontWeight: FontWeight.bold)),
-                              const SizedBox(
-                                width: 5,
-                              ),
-                              Container(
-                                decoration: const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Color(0xffC1C7D0)),
-                                height:
-                                    MediaQuery.of(context).size.height * 0.025,
-                                width: MediaQuery.of(context).size.width * 0.1,
-                                // child: IconButton(
-                                //   icon: const Icon(
-                                //     Icons.add,
-                                //     size: 10,
-                                //     color: Colors.white,
-                                //   ),
-                                //   onPressed: () =>
-                                //       restaurantProvider.updateQuantity(1),
-                                // ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                        cartItem.itemName,
+                                        style: const TextStyle(fontWeight: FontWeight.bold)
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey[100],
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                decoration: const BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: Color(0xffC1C7D0)
+                                                ),
+                                                height: 30,
+                                                width: 30,
+                                                child: IconButton(
+                                                  padding: EdgeInsets.zero,
+                                                  icon: const Icon(
+                                                    Icons.remove,
+                                                    size: 20,
+                                                    color: Colors.white,
+                                                  ),
+                                                  onPressed: () => onQuantityChanged(cartItem.quantity - 1),
+                                                ),
+                                              ),
+                                              Padding(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                                child: Text(
+                                                    '${cartItem.quantity}',
+                                                    style: const TextStyle(
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 16
+                                                    )
+                                                ),
+                                              ),
+                                              Container(
+                                                decoration: const BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: Color(0xffC1C7D0)
+                                                ),
+                                                height: 30,
+                                                width: 30,
+                                                child: IconButton(
+                                                  padding: EdgeInsets.zero,
+                                                  icon: const Icon(
+                                                    Icons.add,
+                                                    size: 20,
+                                                    color: Colors.white,
+                                                  ),
+                                                  onPressed: () => onQuantityChanged(cartItem.quantity + 1),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Spacer(), // Add price on the right side
+                                        Text(
+                                            '\$${(cartItem.price * cartItem.quantity).toStringAsFixed(2)}',
+                                            style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16
+                                            )
+                                        )
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                        // Text(
-                        //     '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}',
-                        //     style:
-                        //         const TextStyle(fontWeight: FontWeight.w500)),
-                      ],
+                        );
+                      },
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        // _buildSummaryRow(context),
-      ],
-    );
-  }
+                  ),
 
-  // Widget _buildSummaryRow(BuildContext context) {
-  //   final restaurantProvider = context.watch<RestaurantProvider>();
-  //   final price = popularItem != null
-  //       ? popularItem!.price
-  //       : item?.prices[restaurantProvider.selectedSize] ?? 0.0;
-  //
-  //   // return Column(
-  //   //   children: [
-  //   //     _buildSummaryDetail('Subtotal',
-  //   //         '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}'),
-  //   //     _buildSummaryDetail('Delivery', '\$0.00'),
-  //   //     _buildSummaryDetail('Voucher', '-'),
-  //   //     const Divider(),
-  //   //     _buildSummaryDetail('Total',
-  //   //         '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}',
-  //   //         isTotal: true),
-  //   //   ],
-  //   // );
-  // }
-
-  Widget _buildSummaryDetail(String label, String value,
-      {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: TextStyle(
-                  fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-          Text(value,
-              style: TextStyle(
-                  fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVoucherContainer() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xffFFFFFF),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-              spreadRadius: 5, blurRadius: 10, color: Colors.grey.shade300),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.percent, color: Colors.orange),
-          const SizedBox(width: 8),
-          const Text('Add Voucher'),
-          const Spacer(),
-          TextButton(
-            onPressed: () {
-              // Handle adding voucher
-            },
-            child: const Text('Add', style: TextStyle(color: Colors.blue)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentOptions(BuildContext context) {
-    // final restaurantProvider = context.watch<RestaurantProvider>();
-    // final price = popularItem != null
-    //     ? popularItem!.price
-    //     : item?.prices[restaurantProvider.selectedSize] ?? 0.0;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xffFFFFFF),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-              spreadRadius: 5, blurRadius: 10, color: Colors.grey.shade300),
-        ],
-      ),
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // GestureDetector(
-              //   onTap: () => _showPaymentBottomSheet(context),
-              //   child: _buildPaymentOption('Paypal',
-              //       '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}'),
-              // ),
-              // _buildPaymentOption('Cash',
-              //     '\$${(price * restaurantProvider.quantity).toStringAsFixed(2)}',
-              //     isSelected: true),
-            ],
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      title: Icon(
-                        CupertinoIcons.check_mark_circled,
-                        color: Colors.green,
-                      ),
-                      content: Column(mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('You ordered successfully',style: TextStyle(fontWeight: FontWeight.w500,fontSize: 20),),
-                          Text(
-                              'You successfully place an order, your order is confirmed and delivered within 20 minutes. Wish you enjoy the food',style: TextStyle(color: Colors.grey[600]),textAlign: TextAlign.center,)
-                        ],
-                      ),
-                      actions: <Widget>[
-                        Center(
-                          child: TextButton(
-                            child: const Text('KEEP BROWSING',style: TextStyle(fontWeight: FontWeight.w700,color: Color(0xff004CFF)),),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              // Navigate back to the main page or wherever you want
-                              Navigator.of(context)
-                                  .popUntil((route) => route.isFirst);
-                            },
+                  // Order Summary Section
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildSummaryRow('Subtotal', '\$${cartProvider.totalPrice.toStringAsFixed(2)}'),
+                        _buildSummaryRow('Delivery Charge', '\$${cartProvider.cartItems.first.deliveryCharge.toStringAsFixed(2)}'),
+                        _buildSummaryRow('Tax', '\$${(cartProvider.totalPrice * 0.1).toStringAsFixed(2)}'),
+                        const Divider(),
+                        _buildSummaryRow('Total', '\$${(cartProvider.totalPrice + cartProvider.cartItems.first.deliveryCharge + (cartProvider.totalPrice * 0.1)).toStringAsFixed(2)}', isBold: true),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            //place order
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xff004BFE),
+                            minimumSize: const Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: const Text(
+                            'Proceed to Checkout',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ],
-                    );
-                  },
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff004BFE),
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ],
               ),
-              child:
-                  const Text('Submit', style: TextStyle(color: Colors.white)),
+            );
+          }
+
+          // Main build method now simplified
+          return Column(
+            children: [
+              _buildDeliverySection(context),
+              const SizedBox(height: 10),
+              _buildRestaurantSection(context),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              color: isBold ? Colors.black : Colors.grey,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+              color: isBold ? Colors.black : Colors.grey,
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildPaymentOption(String method, String amount,
-      {bool isSelected = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.blue[50] : Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-        border:
-            Border.all(color: isSelected ? Colors.blue : Colors.transparent),
-      ),
-      child: Column(
-        children: [
-          Text(amount, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(method,
-              style: TextStyle(color: isSelected ? Colors.blue : Colors.grey)),
-        ],
-      ),
-    );
-  }
-
-  void _showPaymentBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.4,
-          minChildSize: 0.3,
-          maxChildSize: 0.5,
-          expand: false,
-          builder: (_, controller) {
-            return SingleChildScrollView(
-              controller: controller,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'Add your payment methods',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    TextField(
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.grey[200],
-                        prefixIcon: Icon(
-                          Icons.credit_card,
-                          color: Colors.grey[500],
-                        ),
-                        hintText: '0000 - 0000 - 0000 - 0000',
-                        hintStyle: TextStyle(color: Colors.grey[500]),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none),
-                      ),
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: Colors.grey[200],
-                              hintText: 'MM/YY',
-                              hintStyle: TextStyle(color: Colors.grey[500]),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide.none),
-                            ),
-                            keyboardType: TextInputType.datetime,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextField(
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: Colors.grey[200],
-                              hintText: 'CVC',
-                              hintStyle: TextStyle(color: Colors.grey[500]),
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                  borderSide: BorderSide.none),
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // Handle adding card
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xff004BFE),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text('Add Card',
-                            style: TextStyle(color: Colors.white)),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: const Text('confirm',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: Colors.black)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }

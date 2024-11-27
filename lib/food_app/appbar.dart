@@ -1,13 +1,21 @@
 
 import 'package:broadway/food_app/search_br.dart';
+import 'package:broadway/providerss/app_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providerss/app_provider.dart';
+
 
 import 'food_provider.dart';
-class CustomAppBarContent extends StatelessWidget {
+class CustomAppBarContent extends StatefulWidget {
   const CustomAppBarContent({super.key});
 
+  @override
+  State<CustomAppBarContent> createState() => _CustomAppBarContentState();
+}
+
+class _CustomAppBarContentState extends State<CustomAppBarContent> {
+  double _minPrice = 0;
+  double _maxPrice = 1000;
   @override
   Widget build(BuildContext context) {
     return Consumer<AppBarState>(
@@ -26,7 +34,7 @@ class CustomAppBarContent extends StatelessWidget {
                 children: [
                    _buildSearchBar(context),
                   const SizedBox(height: 16),
-                  _buildLocationRow(context),
+                  buildLocationRow(context),
                 ],
               ),
             ),
@@ -65,33 +73,48 @@ class CustomAppBarContent extends StatelessWidget {
     );
   }
 
-  Widget _buildLocationRow(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Row(
+  Widget buildLocationRow(BuildContext context) {
+    return Consumer<MainProvider>(
+      builder: (context, provider, child) {
+
+        if (provider.userProfile == null) {
+          provider.fetchUserProfile();
+        }
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(Icons.location_on, size: 16, color: Colors.blue),
-            SizedBox(width: 4),
-            Text('Delivery to', style: TextStyle(color: Colors.blue)),
-            SizedBox(width: 4),
-            Text('thrissur',
-                style:
-                    TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-            Icon(Icons.arrow_drop_down, size: 16, color: Colors.blue),
+            Row(
+              children: [
+                const Icon(Icons.location_on, size: 16, color: Colors.blue),
+                const SizedBox(width: 4),
+                const Text('Delivery to', style: TextStyle(color: Colors.blue)),
+                const SizedBox(width: 4),
+                Text(
+                  provider.userProfile != null
+                      ? '${provider.userProfile!.place}'
+                      : 'Loading...',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue
+                  ),
+                ),
+
+              ],
+            ),
+            GestureDetector(
+              onTap: () => context.read<AppBarState>().toggleFilter(),
+              child: const Row(
+                children: [
+                  Icon(Icons.filter_list, size: 16),
+                  SizedBox(width: 4),
+                  Text('Filter'),
+                ],
+              ),
+            ),
           ],
-        ),
-        GestureDetector(
-          onTap: () => context.read<AppBarState>().toggleFilter(),
-          child: const Row(
-            children: [
-              Icon(Icons.filter_list, size: 16),
-              SizedBox(width: 4),
-              Text('Filter'),
-            ],
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -117,18 +140,7 @@ class CustomAppBarContent extends StatelessWidget {
               }
             },
           ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xff004CFF),
-              minimumSize: const Size(double.infinity, 48),
-            ),
-            child: const Text(
-              'Complete',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
+
         ],
       ),
     );
@@ -202,6 +214,7 @@ class CustomAppBarContent extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(label),
+
       ],
     );
   }
@@ -214,6 +227,7 @@ class CustomAppBarContent extends StatelessWidget {
             'Recomended',
             'Fastest delivery ',
             'Most popular',
+
           ].map((option) {
             return RadioListTile<String>(
               title: Text(option),
@@ -233,7 +247,45 @@ class CustomAppBarContent extends StatelessWidget {
 
   Widget _buildPriceRange() {
     // Implement price range slider or options here
-    return const Text('Price range ');
+     return Container(
+       child: Column(
+         children: [Padding(
+           padding: const EdgeInsets.symmetric(horizontal: 25,),
+           child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
+             children: [
+               Text('\$${_minPrice.round()} ',style: TextStyle(fontWeight: FontWeight.w600,fontSize: 18),),
+               Text(' \$${_maxPrice.round()}',style: TextStyle(fontWeight: FontWeight.w600,fontSize: 18)),
+             ],
+           ),
+         ),
+           RangeSlider(activeColor: Color(0xff004CFF),
+            values: RangeValues(_minPrice, _maxPrice),
+            min: 0,
+            max: 1000,
+            divisions: 100,
+
+            onChanged: (values) {
+              setState(() {
+                _minPrice = values.start;
+                _maxPrice = values.end;
+              });
+            },
+               ),
+           const SizedBox(height: 16),
+           ElevatedButton(
+             onPressed: () {},
+             style: ElevatedButton.styleFrom(
+               backgroundColor: Color(0xff004CFF),
+               minimumSize: const Size(double.infinity, 48),
+             ),
+             child: const Text(
+               'Apply',
+               style: TextStyle(color: Colors.white),
+             ),
+           ),
+         ],
+       ),
+     );
   }
 }
 

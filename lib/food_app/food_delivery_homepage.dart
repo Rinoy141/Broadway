@@ -1,12 +1,14 @@
 
 import 'dart:math';
-
+import 'dart:ui';
+import 'package:broadway/food_app/confirm_order_page.dart';
 import 'package:broadway/food_app/nearby.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import '../providerss/app_provider.dart';
 import 'appbar.dart';
 import 'best_partners_page.dart';
+import 'category.dart';
 import 'food_provider.dart';
 
 class FoodDeliveryHomePage extends StatelessWidget {
@@ -74,67 +76,119 @@ class FoodDeliveryHomePage extends StatelessWidget {
   }
 
   Widget _buildCategorySection() {
-    final categories = [
-      {'icon': Icons.local_pizza, 'name': 'Sandwich'},
-      {'icon': Icons.coffee, 'name': 'Pizza'},
-      {'icon': Icons.fastfood, 'name': 'Burgers'},
-    ];
+    return Consumer<MainProvider>(
+      builder: (context, provider, child) {
 
-    return Card(
-      color: Colors.white,
-      elevation: 10,
-      margin: const EdgeInsets.all(8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        if (provider.categories.isEmpty && !provider.isLoadingCategories) {
+          provider.fetchCategories();
+        }
+
+        return Card(
+          color: Colors.white,
+          elevation: 10,
+          margin: const EdgeInsets.all(8),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               children: [
-                const Text('Category',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                TextButton(onPressed: () {}, child: const Text('See all')),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                        'Category',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                    ),
+                    TextButton(
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => CartPage(),));
+                        },
+                        child: const Text('See All')
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 120,
+                  child: provider.isLoadingCategories || provider.categories.isEmpty
+                      ? const Center(
+                    child: CircularProgressIndicator(),
+                  )
+                      : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: provider.categories.length,
+                    itemBuilder: (context, index) {
+                      final category = provider.categories[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 40),
+                        child: Column(
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => MenuPage(categoryId: category.id),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.blue[50],
+                                ),
+                                child: ClipOval(
+                                  child: category.imageUrl.isNotEmpty
+                                      ? Image.network(
+                                    category.imageUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Center(
+                                        child: Icon(Icons.error_outline),
+                                      );
+                                    },
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded /
+                                              loadingProgress.expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      );
+                                    },
+                                  )
+                                      : const Icon(Icons.restaurant_menu),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              category.categoryName,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 120,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 40),
-                    child: Column(
-                      children: [
-                        InkWell(
-                          onTap: () {
-                            print(
-                                '${categories[index]['name']} button pressed!');
-                          },
-                          child: CircleAvatar(
-                            radius: 40,
-                            backgroundColor: Colors.blue[50],
-                            child: Icon(categories[index]['icon'] as IconData),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(categories[index]['name'] as String),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
-
-
 }
+
+
+
 
   Widget _buildTabSection(BuildContext context) {
     return DefaultTabController(

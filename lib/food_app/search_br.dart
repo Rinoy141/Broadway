@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providerss/app_provider.dart';
-
-
 import 'food_details_page.dart';
-import 'restaurant_model.dart';
+
 
 class SearchPage extends StatefulWidget {
   const SearchPage({Key? key}) : super(key: key);
@@ -52,7 +51,12 @@ class _SearchPageState extends State<SearchPage> {
         builder: (context, mainProvider, child) {
           // Handle different search states
           if (mainProvider.currentSearchResults == null) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: Text(
+                'Start searching for restaurants or dishes',
+                style: TextStyle(color: Colors.grey),
+              ),
+            );
           }
 
           final searchResults = mainProvider.currentSearchResults ?? [];
@@ -67,31 +71,53 @@ class _SearchPageState extends State<SearchPage> {
             itemCount: searchResults.length,
             itemBuilder: (context, index) {
               final item = searchResults[index];
+              final isMenuItem = item.containsKey('Item');
+              final isRestaurant = item.containsKey('Restaurant_Name') && !isMenuItem;
 
-              // Determine if it's a menu item or a restaurant
-              final isMenuItem = item['Item'] != null;
-              final isRestaurant = item['Restaurant_Name'] != null;
-
-              return ListTile(
-                leading: _buildLeadingImage(item, isMenuItem, isRestaurant),
-                title: Text(
-                  isMenuItem
-                      ? '${item['Item'] ?? 'Unknown'} (${item['Restaurant_Name'] ?? 'Unknown Restaurant'})'
-                      : item['Restaurant_Name'] ?? 'Unknown',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+              return Card(
+                elevation: 2,
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(8),
+                  leading: _buildLeadingImage(item, isMenuItem, isRestaurant),
+                  title: Text(
+                    isMenuItem
+                        ? '${item['Item'] ?? 'Unknown'} (${item['Restaurant_Name'] ?? 'Unknown Restaurant'})'
+                        : item['Restaurant_Name'] ?? 'Unknown',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  subtitle: _buildSubtitle(item, isMenuItem, isRestaurant),
+                  trailing: Icon(
+                    Icons.arrow_forward_ios,
+                    color: Theme.of(context).primaryColor,
+                    size: 16,
+                  ),
+                  onTap: () => _navigateToRestaurantDetails(context, mainProvider, item, isMenuItem),
                 ),
-                subtitle: Text(
-                  isMenuItem
-                      ? '${item['Category'] ?? ''} • \₹${item['Price'] ?? ''}'
-                      : '${item['District'] ?? ''} ${item['Place'] != null ? '• ${item['Place']}' : ''}',
-                ),
-                onTap: () => _navigateToRestaurantDetails(context, mainProvider, item, isMenuItem),
               );
             },
           );
         },
       ),
     );
+  }
+
+  Widget _buildSubtitle(dynamic item, bool isMenuItem, bool isRestaurant) {
+    if (isMenuItem) {
+      return Text(
+        '${item['Category'] ?? ''} • \₹${item['Price'] ?? ''}',
+        style: const TextStyle(color: Colors.grey),
+      );
+    } else if (isRestaurant) {
+      return Text(
+        '${item['Place'] ?? ''} • ${item['Distance'] != null ? '${item['Distance']} km' : ''}',
+        style: const TextStyle(color: Colors.grey),
+      );
+    }
+    return const SizedBox.shrink();
   }
 
   Widget _buildLeadingImage(dynamic item, bool isMenuItem, bool isRestaurant) {
@@ -103,22 +129,35 @@ class _SearchPageState extends State<SearchPage> {
       imageUrl = item['ImageUrl'] as String?;
     }
 
-    return imageUrl != null
-        ? Image.network(
-      imageUrl,
-      width: 50,
-      height: 50,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Icon(
-          isMenuItem ? Icons.fastfood : Icons.restaurant,
-          color: Theme.of(context).primaryColor,
-        );
-      },
-    )
-        : Icon(
-      isMenuItem ? Icons.fastfood : Icons.restaurant,
-      color: Theme.of(context).primaryColor,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: imageUrl != null
+          ? Image.network(
+        imageUrl,
+        width: 60,
+        height: 60,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildPlaceholderIcon(context, isMenuItem, isRestaurant);
+        },
+      )
+          : _buildPlaceholderIcon(context, isMenuItem, isRestaurant),
+    );
+  }
+
+  Widget _buildPlaceholderIcon(BuildContext context, bool isMenuItem, bool isRestaurant) {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        isMenuItem ? Icons.fastfood : Icons.restaurant,
+        color: Theme.of(context).primaryColor,
+        size: 30,
+      ),
     );
   }
 
@@ -130,16 +169,12 @@ class _SearchPageState extends State<SearchPage> {
       ) {
     int? restaurantId;
 
-    // Extract restaurant ID based on the type of item
     if (isMenuItem) {
-      // For menu items, use the 'Restaurant' field which contains the restaurant ID
       restaurantId = item['Restaurant'] as int?;
     } else {
-      // For restaurant items, use the 'id' field
       restaurantId = item['id'] as int?;
     }
 
-    // Ensure restaurant ID is not null before navigating
     if (restaurantId != null) {
       Navigator.push(
         context,
@@ -148,7 +183,6 @@ class _SearchPageState extends State<SearchPage> {
         ),
       );
     } else {
-      // Optional: Show an error message if no restaurant ID is found
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to find restaurant details')),
       );

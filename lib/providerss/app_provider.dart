@@ -1,17 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:broadway/food_app/food_delivery_homepage.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+
 import '../food_app/restaurant_model.dart';
 import '../login/forgot_password.dart';
 import '../login/loginpage.dart';
-import 'package:path_provider/path_provider.dart';
 import '../profile/edit_profile.dart';
-
 
 // NotificationSettings model
 class NotificationSettings extends ChangeNotifier {
@@ -36,10 +37,7 @@ class NotificationSettings extends ChangeNotifier {
   }
 }
 
-
-
-
- /// REGISTRATION
+/// REGISTRATION
 class RegistrationProvider with ChangeNotifier {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -90,7 +88,6 @@ class RegistrationProvider with ChangeNotifier {
       // Handle error cases
       final responseData = jsonDecode(response.body);
       setError(responseData['msg'] ?? 'Registration failed. Please try again.');
-
     } catch (e) {
       setError('Connection error. Please check your internet connection.');
       print("Registration error: $e");
@@ -131,7 +128,7 @@ class RegistrationProvider with ChangeNotifier {
       return false;
     }
 
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+    if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$')
         .hasMatch(emailController.text.trim())) {
       setError('Please enter a valid email address');
       return false;
@@ -154,8 +151,6 @@ class RegistrationProvider with ChangeNotifier {
   }
 }
 
-
-
 ///LOGIN
 
 class MainProvider extends ChangeNotifier {
@@ -163,24 +158,52 @@ class MainProvider extends ChangeNotifier {
   final TextEditingController passwordController = TextEditingController();
 
   bool _isLoading = false;
+
   bool get isLoading => _isLoading;
   late final Dio _dio;
   PersistCookieJar? _cookieJar;
 
   List<NearbyRestaurant> _nearbyRestaurants = [];
-  List<dynamic>? _currentSearchResults;
+
   List<Restaurant> _restaurants = [];
   List<PopularItem> _popularItems = [];
   List<FoodCategory> _foodCategories = [];
+  List<dynamic> menuResults = [];
+  List<dynamic> restaurantResults = [];
+  List<dynamic>? currentSearchResults;
+
   List<NearbyRestaurant> get nearbyRestaurants => _nearbyRestaurants;
-  List<dynamic>? get currentSearchResults => _currentSearchResults;
+  List<Category> _categories = [];
+
+  List<Category> get categories => _categories;
+
   List<Restaurant> get restaurants => _restaurants;
+
   List<PopularItem> get popularItems => _popularItems;
+
   List<FoodCategory> get foodCategories => _foodCategories;
   Restaurant? _restaurantDetails;
+
   Restaurant? get restaurantDetails => _restaurantDetails;
+  String _error = '';
+  int _quantity = 1;
 
+  String get error => _error;
 
+  int get quantity => _quantity;
+  String _categoryError = '';
+
+  String get categoryError => _categoryError;
+  bool _isLoadingCategories = false;
+
+  bool get isLoadingCategories => _isLoadingCategories;
+
+  double _totalPrice = 0.0;
+  double get totalPrice => _totalPrice;
+  List<CartItem> _cartItems = [];
+  List<CartItem> get cartItems => _cartItems;
+  ProfileModel? _userProfile;
+  ProfileModel? get userProfile => _userProfile;
 
   MainProvider() {
     _dio = Dio();
@@ -202,14 +225,12 @@ class MainProvider extends ChangeNotifier {
       print('Initializing cookie jar at path: $cookiesDir');
       _cookieJar = PersistCookieJar(
           ignoreExpires: true, // Prevent cookie expiration
-          storage: FileStorage(cookiesDir)
-      );
+          storage: FileStorage(cookiesDir));
       _dio.interceptors.add(CookieManager(_cookieJar!));
 
       // Verify the cookie jar was initialized
-      final cookies = await _cookieJar?.loadForRequest(
-          Uri.parse('http://broadway.extramindtech.com')
-      );
+      final cookies = await _cookieJar
+          ?.loadForRequest(Uri.parse('http://broadway.extramindtech.com'));
       print('Existing cookies after initialization: $cookies');
     } catch (e) {
       print('Error initializing cookie jar: $e');
@@ -226,7 +247,10 @@ class MainProvider extends ChangeNotifier {
     try {
       await ensureCookieJarInitialized();
       final cookies = await _cookieJar?.loadForRequest(url);
-      final cookieString = cookies?.map((cookie) => '${cookie.name}=${cookie.value}').join('; ') ?? '';
+      final cookieString = cookies
+              ?.map((cookie) => '${cookie.name}=${cookie.value}')
+              .join('; ') ??
+          '';
       print('Generated Cookie String: $cookieString');
       return cookieString;
     } catch (e) {
@@ -259,7 +283,8 @@ class MainProvider extends ChangeNotifier {
             'Content-Type': 'application/json',
             'Cookie': preCookies,
           },
-          validateStatus: (status) => true, // Allow all status codes for debugging
+          validateStatus: (status) =>
+              true, // Allow all status codes for debugging
         ),
       );
 
@@ -270,7 +295,8 @@ class MainProvider extends ChangeNotifier {
       final postCookies = await getCookieString(Uri.parse(url));
       print('Cookies after login: $postCookies');
 
-      if (response.statusCode == 200 && response.data['msg'] == 'Login Success') {
+      if (response.statusCode == 200 &&
+          response.data['msg'] == 'Login Success') {
         print('Login successful');
 
         // Verify cookies were saved
@@ -279,7 +305,8 @@ class MainProvider extends ChangeNotifier {
 
         return true;
       } else {
-        final errorMsg = response.data['msg'] ?? 'An error occurred. Please try again later.';
+        final errorMsg = response.data['msg'] ??
+            'An error occurred. Please try again later.';
         _showErrorDialog(context, errorMsg);
         return false;
       }
@@ -317,13 +344,13 @@ class MainProvider extends ChangeNotifier {
           print('Profile exists, navigating to BestPartnersPage');
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) =>  FoodDeliveryHomePage()),
+            MaterialPageRoute(builder: (context) => FoodDeliveryHomePage()),
           );
         } else {
           print('Profile not set, navigating to EditProfilePage');
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) =>  EditProfilePage()),
+            MaterialPageRoute(builder: (context) => EditProfilePage()),
           );
         }
       }
@@ -348,8 +375,7 @@ class MainProvider extends ChangeNotifier {
     required String place,
     required String gender,
   }) async
-  {
-    await ensureCookieJarInitialized();
+  {await ensureCookieJarInitialized();
 
     const url = 'http://broadway.extramindtech.com/user/addaddress/';
     final body = {
@@ -382,7 +408,11 @@ class MainProvider extends ChangeNotifier {
 
       if (response.statusCode == 200 &&
           (response.data['msg'] == 'Data saved Successfully' ||
-              response.data['msg']?.toString().toLowerCase().contains('success') == true)) {
+              response.data['msg']
+                      ?.toString()
+                      .toLowerCase()
+                      .contains('success') ==
+                  true)) {
         print('Successfully added/updated address: ${response.data['msg']}');
         return true;
       } else {
@@ -413,7 +443,8 @@ class MainProvider extends ChangeNotifier {
             'Content-Type': 'application/json',
             'Cookie': cookieString,
           },
-          validateStatus: (status) => true, // Allow all status codes for debugging
+          validateStatus: (status) =>
+              true, // Allow all status codes for debugging
         ),
       );
 
@@ -441,6 +472,241 @@ class MainProvider extends ChangeNotifier {
       print('Error checking profile status: $e');
       return false;
     }
+  }
+
+  ///view profile
+  Future<ProfileModel?> fetchUserProfile() async {
+    try {
+      await ensureCookieJarInitialized();
+
+      const url = 'http://broadway.extramindtech.com/user/profile_view/';
+      final cookieString = await getCookieString(Uri.parse(url));
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieString,
+          },
+          validateStatus: (status) => true, // Allow all status codes for debugging
+        ),
+      );
+
+      print('Profile view response status: ${response.statusCode}');
+      print('Profile view response data: ${response.data}');
+
+      if (response.statusCode == 200 && response.data != null) {
+        _userProfile = ProfileModel.fromJson(response.data);
+        notifyListeners();
+        return _userProfile;
+      } else {
+        print('Failed to fetch profile: ${response.data}');
+        _userProfile = null;
+        notifyListeners();
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching profile: $e');
+      _userProfile = null;
+      notifyListeners();
+      return null;
+    }
+  }
+
+
+
+  ///Add to cart
+
+  Future<bool> addToCart(int itemId) async {
+    try {
+      _isLoading = true;
+      _error = '';
+      notifyListeners();
+
+      final url =
+          Uri.parse('http://broadway.extramindtech.com/food/addcart/$itemId');
+      final cookieString = await getCookieString(url);
+
+      final response = await _dio.post(
+        url.toString(),
+        data: {"Quantity": _quantity},
+        options: Options(
+          headers: {
+            'Cookie': cookieString,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      _isLoading = false;
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        if (responseData['msg'] == 'Cart Added Successfully') {
+          notifyListeners();
+          return true;
+        }
+      }
+
+      _error = 'Failed to add to cart';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      print('Error adding to cart: $e');
+      _isLoading = false;
+      _error = 'Error adding to cart';
+      notifyListeners();
+      return false;
+    }
+  }
+  Future<void> fetchCartItems() async {
+    try {
+      print('Starting fetchCartItems()');
+      _isLoading = true;
+      _error = '';
+      notifyListeners();
+      print('Loading state set to true, error cleared');
+
+      final url = 'http://broadway.extramindtech.com/food/viewcart/';
+      final cookieString = await getCookieString(Uri.parse(url));
+      print('Cookie string obtained: $cookieString');
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          headers: {
+            'Cookie': cookieString,
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      print('Response received. Status code: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        print('Response data: $responseData');
+
+        // Ensure 'Total Price' is converted to double
+        final totalPriceValue = responseData['Total Price'];
+
+        _cartItems = (responseData['Items'] as List)
+            .map((item) => CartItem.fromJson(item))
+            .toList();
+
+        // Convert Total Price to double, handling potential null or dynamic type
+        _totalPrice = totalPriceValue is num
+            ? totalPriceValue.toDouble()
+            : double.tryParse(totalPriceValue.toString()) ?? 0.0;
+
+        print('Cart items parsed: ${cartItems.length}');
+        print('Total price: $totalPrice');
+      } else {
+        print('Failed to load cart items. Status code: ${response.statusCode}');
+        throw Exception('Failed to load cart items');
+      }
+    } catch (e) {
+      print('Error in fetchCartItems(): $e');
+      _error = 'Error fetching cart items: ${e.toString()}';
+      _cartItems = [];
+      _totalPrice = 0.0;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+      print('fetchCartItems() completed. Loading state set to false');
+    }
+  }
+
+  Future<void> removeCartItem(int cartItemId) async {
+    try {
+      print('Starting removeCartItem() for item ID: $cartItemId');
+      _isLoading = true;
+      notifyListeners();
+
+      final url =
+          'http://broadway.extramindtech.com/food/deletecart/$cartItemId';
+      final cookieString = await getCookieString(Uri.parse(url));
+      print('Cookie string obtained: $cookieString');
+
+      final response = await _dio.delete(
+        url,
+        options: Options(
+          headers: {
+            'Cookie': cookieString,
+            'Accept': 'application/json',
+          },
+        ),
+      );
+      print('Response received. Status code: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        print('Cart item removed successfully');
+        await fetchCartItems(); // Refresh cart after removing item
+      } else {
+        print(
+            'Failed to remove cart item. Status code: ${response.statusCode}');
+        throw Exception('Failed to remove cart item');
+      }
+    } catch (e) {
+      print('Error in removeCartItem(): $e');
+      _isLoading = false;
+      _error = 'Error removing cart item: ${e.toString()}';
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateCartItemQuantity(int cartItemId, int newQuantity) async {
+    try {
+      print(
+          'Starting updateCartItemQuantity() for item ID: $cartItemId, new quantity: $newQuantity');
+      _isLoading = true;
+      notifyListeners();
+
+      final url =
+          'http://broadway.extramindtech.com/food/cartupdate/$cartItemId';
+      final cookieString = await getCookieString(Uri.parse(url));
+      print('Cookie string obtained: $cookieString');
+
+      final response = await _dio.put(
+        url,
+        data: {"Quantity": newQuantity},
+        options: Options(
+          headers: {
+            'Cookie': cookieString,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      print('Response received. Status code: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        print('Cart item quantity updated successfully');
+        await fetchCartItems(); // Refresh cart after updating quantity
+      } else {
+        print(
+            'Failed to update cart item quantity. Status code: ${response.statusCode}');
+        throw Exception('Failed to update cart item quantity');
+      }
+    } catch (e) {
+      print('Error in updateCartItemQuantity(): $e');
+      _isLoading = false;
+      _error = 'Error updating cart item quantity: ${e.toString()}';
+      notifyListeners();
+    }
+  }
+
+  void updateQuantity(int change) {
+    if (_quantity + change >= 1) {
+      _quantity = _quantity + change;
+      notifyListeners();
+    }
+  }
+
+  void resetQuantity() {
+    _quantity = 1;
+    notifyListeners();
   }
 
   /// Handle profile update and navigation
@@ -478,7 +744,7 @@ class MainProvider extends ChangeNotifier {
         // Navigate to BestPartnersPage
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) =>  FoodDeliveryHomePage()),
+          MaterialPageRoute(builder: (context) => FoodDeliveryHomePage()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -497,34 +763,37 @@ class MainProvider extends ChangeNotifier {
   Future<void> searchMenuAndRestaurants(String query) async {
     try {
       if (query.isEmpty) {
-        _currentSearchResults = []; // Clear results for empty query
+        currentSearchResults = []; // Clear results for empty query
+        menuResults = [];
+        restaurantResults = [];
         notifyListeners();
         return;
       }
 
-      final results = await _fetchSearchResults(query);
-      _currentSearchResults = results; // Update search results
-      notifyListeners(); // Notify UI to rebuild
+      final searchResults = await fetchSearchResults(query);
+
+      // Separate menu items and restaurants
+      menuResults = searchResults['menu_items'] ?? [];
+      restaurantResults = searchResults['restaurants'] ?? [];
+
+      // Combine for overall search results display
+      currentSearchResults = [...menuResults, ...restaurantResults];
+
+      notifyListeners();
     } catch (e) {
       print('Error while searching: $e');
       throw Exception('Failed to fetch search results');
     }
   }
 
-  // API call to fetch search results
-  Future<List<dynamic>> _fetchSearchResults(String query) async {
-    const String baseUrl = 'http://broadway.extramindtech.com/food/getbysearch/';
+  Future<Map<String, dynamic>> fetchSearchResults(String query) async {
+    const String baseUrl =
+        'http://broadway.extramindtech.com/food/getbysearch/';
 
     try {
       final url = Uri.parse(baseUrl);
 
-      // Ensure cookie handling is set up
-      final cookieString = await getCookieString(url); // Implement this in your app
-
-      // Debugging logs
-      print('Searching for: $query');
-      print('Request URL: $url');
-      print('Request Cookies: $cookieString');
+      final cookieString = await getCookieString(url);
 
       final response = await _dio.post(
         url.toString(),
@@ -542,15 +811,10 @@ class MainProvider extends ChangeNotifier {
       print('Search response data: ${response.data}');
 
       if (response.statusCode == 200) {
-        final responseData = response.data as Map<String, dynamic>;
-
-        // Combine menu items and restaurants into a single list
-        final List<dynamic> results = [
-          ...?responseData['menu_items'],
-          ...?responseData['restaurants'],
-        ];
-
-        return results;
+        return {
+          'menu_items': response.data['menu_items'] ?? [],
+          'restaurants': response.data['restaurants'] ?? []
+        };
       } else {
         throw Exception('Failed to search menu and restaurants');
       }
@@ -560,13 +824,77 @@ class MainProvider extends ChangeNotifier {
     }
   }
 
-///fetch restaurants with id
+  ///category
+  Future<void> fetchCategories() async {
+    try {
+      _isLoadingCategories = true;
+      _categoryError = '';
+      notifyListeners();
+
+      await ensureCookieJarInitialized();
+      final url =
+          Uri.parse('http://broadway.extramindtech.com/food/categories/');
+      final cookieString = await getCookieString(url);
+
+      final response = await _dio.get(
+        url.toString(),
+        options: Options(
+          headers: {
+            'Cookie': cookieString,
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        if (response.data == null) {
+          throw Exception('Response data is null');
+        }
+
+        final List<dynamic> categoriesJson = response.data;
+        _categories =
+            categoriesJson.map((json) => Category.fromJson(json)).toList();
+        _categoryError = '';
+      } else {
+        throw Exception(
+            'Failed to fetch categories. Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      _categoryError = 'Failed to load categories: $e';
+      _categories = [];
+    } finally {
+      _isLoadingCategories = false;
+      notifyListeners();
+    }
+  }
+
+  ///with category id
+  Future<List<MenuItem>> getMenuItemsByCategory(int categoryId) async {
+    try {
+      final response = await _dio.get(
+        'http://broadway.extramindtech.com/food/categories/$categoryId',
+      );
+
+      if (response.statusCode == 200) {
+        return (response.data as List)
+            .map((item) => MenuItem.fromJson(item))
+            .toList();
+      } else {
+        throw Exception('Failed to fetch menu items: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  ///fetch restaurants with id
   Future<void> fetchRestaurantDetails(int restaurantId) async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      final url = Uri.parse('http://broadway.extramindtech.com/food/restaurants/$restaurantId');
+      final url = Uri.parse(
+          'http://broadway.extramindtech.com/food/restaurants/$restaurantId');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.get(
@@ -604,7 +932,8 @@ class MainProvider extends ChangeNotifier {
     try {
       await ensureCookieJarInitialized();
 
-      final url = Uri.parse('http://broadway.extramindtech.com/food/restaurants/');
+      final url =
+          Uri.parse('http://broadway.extramindtech.com/food/restaurants/');
       final cookieString = await getCookieString(url);
 
       print('Fetching restaurants...');
@@ -626,7 +955,9 @@ class MainProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final List<dynamic> restaurantsJson = response.data;
-        return restaurantsJson.map((json) => Restaurant.fromJson(json)).toList();
+        return restaurantsJson
+            .map((json) => Restaurant.fromJson(json))
+            .toList();
       } else {
         throw Exception('Failed to fetch restaurants');
       }
@@ -635,12 +966,14 @@ class MainProvider extends ChangeNotifier {
       throw Exception('Failed to fetch restaurants');
     }
   }
+
   /// Best rest
   Future<List<BestSeller>> fetchBestSellers(BuildContext context) async {
     try {
       await ensureCookieJarInitialized();
 
-      final url = Uri.parse('http://broadway.extramindtech.com/food/bestsellers/');
+      final url =
+          Uri.parse('http://broadway.extramindtech.com/food/bestsellers/');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.get(
@@ -656,7 +989,9 @@ class MainProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = response.data;
         final List<dynamic> bestSellersJson = data['Best sellers'];
-        return bestSellersJson.map((json) => BestSeller.fromJson(json)).toList();
+        return bestSellersJson
+            .map((json) => BestSeller.fromJson(json))
+            .toList();
       } else {
         throw Exception('Failed to fetch best sellers');
       }
@@ -666,16 +1001,15 @@ class MainProvider extends ChangeNotifier {
     }
   }
 
-
-
-/// Fetch Restaurant Menu
+  /// Fetch Restaurant Menu
 
   Future<void> fetchRestaurantMenu(int restaurantId) async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      final url = Uri.parse('http://broadway.extramindtech.com/food/restaurantmenu/$restaurantId');
+      final url = Uri.parse(
+          'http://broadway.extramindtech.com/food/restaurantmenu/$restaurantId');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.get(
@@ -692,10 +1026,12 @@ class MainProvider extends ChangeNotifier {
         final menuData = response.data;
 
         final popularItemsJson = menuData['popularItems'] as List<dynamic>;
-        _popularItems = popularItemsJson.map((json) => PopularItem.fromJson(json)).toList();
+        _popularItems =
+            popularItemsJson.map((json) => PopularItem.fromJson(json)).toList();
 
         final categoriesJson = menuData['foodCategories'] as List<dynamic>;
-        _foodCategories = categoriesJson.map((json) => FoodCategory.fromJson(json)).toList();
+        _foodCategories =
+            categoriesJson.map((json) => FoodCategory.fromJson(json)).toList();
 
         _isLoading = false;
         notifyListeners();
@@ -709,13 +1045,49 @@ class MainProvider extends ChangeNotifier {
     }
   }
 
+  ///fetch by price
+  Future<List<Restaurant>> fetchMenuByPrice(int minPrice, int maxPrice) async {
+    try {
+      await ensureCookieJarInitialized();
+
+      final url =
+          Uri.parse('http://broadway.extramindtech.com/food/getbyprice/');
+      final cookieString = await getCookieString(url);
+
+      final response = await _dio.post(
+        url.toString(),
+        data: jsonEncode({'Price': maxPrice}),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieString,
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> priceRangeFoodsJson = response.data;
+        return priceRangeFoodsJson
+            .map((json) => Restaurant.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('Failed to fetch menu items by price');
+      }
+    } catch (e) {
+      print('Error fetching menu by price: $e');
+      rethrow;
+    }
+  }
+
   ///nearby
   Future<void> fetchNearbyRestaurants() async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      final url = Uri.parse('http://broadway.extramindtech.com/food/nearbysearch/');
+      final url =
+          Uri.parse('http://broadway.extramindtech.com/food/nearbysearch/');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.get(
@@ -746,6 +1118,9 @@ class MainProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+
+
 
   /// Logout method
   Future<void> logout() async {
@@ -789,6 +1164,7 @@ class ForgotPasswordProvider extends ChangeNotifier {
   final TextEditingController emailController = TextEditingController();
 
   bool _isLoading = false;
+
   bool get isLoading => _isLoading;
 
   Future<bool> forgotPassword(BuildContext context) async {
@@ -797,7 +1173,8 @@ class ForgotPasswordProvider extends ChangeNotifier {
 
     print('Attempting to send password reset email...');
 
-    final url = Uri.parse('http://broadway.extramindtech.com/user/forgot-password/');
+    final url =
+        Uri.parse('http://broadway.extramindtech.com/user/forgot-password/');
     final body = {
       'Email': emailController.text,
     };
@@ -810,39 +1187,48 @@ class ForgotPasswordProvider extends ChangeNotifier {
       );
 
       // Check if the response content type is JSON before parsing
-      if (response.headers['content-type']?.contains('application/json') == true) {
+      if (response.headers['content-type']?.contains('application/json') ==
+          true) {
         final data = jsonDecode(response.body);
         print('Forgot password API response: $data');
 
         if (response.statusCode == 200) {
           print('Status 200: Success - Password reset email sent.');
           if (data['msg'] == 'Password reset email sent') {
-            showSuccessDialog(context, 'Password reset email has been sent to your email address.');
+            showSuccessDialog(context,
+                'Password reset email has been sent to your email address.');
             return true;
           } else {
             showErrorDialog(context, data['msg'] ?? 'An error occurred');
             return false;
           }
         } else if (response.statusCode == 400) {
-          print('Status 400: Bad Request - Possibly invalid email format or missing data.');
-          showErrorDialog(context, 'Invalid email format or missing data. Please check your input.');
+          print(
+              'Status 400: Bad Request - Possibly invalid email format or missing data.');
+          showErrorDialog(context,
+              'Invalid email format or missing data. Please check your input.');
           return false;
         } else if (response.statusCode == 404) {
           print('Status 404: Not Found - The endpoint does not exist.');
-          showErrorDialog(context, 'Unable to reach the server. Please try again later.');
+          showErrorDialog(
+              context, 'Unable to reach the server. Please try again later.');
           return false;
         } else if (response.statusCode == 500) {
           print('Status 500: Internal Server Error - Server-side issue.');
-          showErrorDialog(context, 'Server is currently unavailable. Please try again later.');
+          showErrorDialog(context,
+              'Server is currently unavailable. Please try again later.');
           return false;
         } else {
-          print('Unexpected status code: ${response.statusCode} - ${response.body}');
-          showErrorDialog(context, 'An error occurred. Please try again later.');
+          print(
+              'Unexpected status code: ${response.statusCode} - ${response.body}');
+          showErrorDialog(
+              context, 'An error occurred. Please try again later.');
           return false;
         }
       } else {
         print('Received non-JSON response: ${response.body}');
-        showErrorDialog(context, 'Unexpected response from server. Please try again later.');
+        showErrorDialog(context,
+            'Unexpected response from server. Please try again later.');
         return false;
       }
     } catch (e) {
@@ -900,16 +1286,3 @@ class ForgotPasswordProvider extends ChangeNotifier {
     super.dispose();
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

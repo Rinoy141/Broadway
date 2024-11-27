@@ -1,4 +1,5 @@
 import 'package:broadway/food_app/restaurant_model.dart';
+import 'package:broadway/food_app/set_quantity_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providerss/app_provider.dart';
@@ -244,7 +245,12 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
         itemBuilder: (context, index) {
           final item = popularItems[index];
           return InkWell(
-            onTap: () {},
+            onTap: () {Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CustomizationPage(popularItem: item),
+              ),
+            );},
             child: _buildPopularItemWidget(item, context),
           );
         },
@@ -307,7 +313,12 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
               itemBuilder: (context, index) {
                 final item = category.items[index];
                 return InkWell(
-                  onTap: () {},
+                  onTap: () { Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CustomizationPage(item: item),
+                    ),
+                  );},
                   child: _buildFoodItemWidget(item),
                 );
               },

@@ -298,3 +298,155 @@ class NearbyRestaurant {
   }
 }
 
+class Category {
+  final int id;
+  final String categoryName;
+  final String imageUrl;
+
+  Category({
+    required this.id,
+    required this.categoryName,
+    required this.imageUrl,
+  });
+
+  factory Category.fromJson(Map<String, dynamic> json) {
+    print('Parsing category from JSON: $json'); // Debug print
+    const baseUrl = 'http://broadway.extramindtech.com';
+    String imageUrl = json['Image'] ?? '';
+    if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+      imageUrl = '$baseUrl$imageUrl';
+    }
+
+    return Category(
+      id: json['id'],
+      categoryName: json['Categorie_name'],
+      imageUrl: imageUrl,
+    );
+  }
+}
+
+class MenuItem {
+  final int id;
+  final int restaurantId;
+  final String name;
+  final String description;
+  final double price;
+  final String imageUrl;
+
+  MenuItem({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.price,
+    required this.imageUrl,
+    required this.restaurantId,
+  });
+
+  factory MenuItem.fromJson(Map<String, dynamic> json) {
+    return MenuItem(
+      id: json['id'],
+      restaurantId: json['Restaurant'],
+      name: json['Item'],
+      description: json['Description'],
+      price: json['Price'],
+      imageUrl: json['Image'],
+    );
+  }
+}
+
+class CartItem {
+  final int id;
+  final MenuItems menuItems;
+  final String itemName;
+  final int quantity;
+  final double price;
+  final double totalPrice;
+  final double deliveryCharge;
+  final double offerPrice;
+  final int restaurantId;
+  final int customerId;
+  final int menuItemId;
+
+  CartItem({
+    required this.id,
+    required this.menuItems,
+    required this.itemName,
+    required this.quantity,
+    required this.price,
+    required this.totalPrice,
+    required this.deliveryCharge,
+    required this.offerPrice,
+    required this.restaurantId,
+    required this.customerId,
+    required this.menuItemId,
+  });
+
+  factory CartItem.fromJson(Map<String, dynamic> json) {
+    return CartItem(
+      id: json['id'],
+      menuItems: MenuItems.fromJson(json['Menuitem']),
+      itemName: json['Item_name'],
+      quantity: json['Quantity'],
+      price: (json['Price'] as num).toDouble(),
+      totalPrice: (json['TotalPrice'] as num).toDouble(),
+      deliveryCharge: (json['DeliveryCharge'] as num).toDouble(),
+      offerPrice: (json['Offer_Price'] as num).toDouble(),
+      restaurantId: json['Restaurant_id'],
+      customerId: json['Customer_id'],
+      menuItemId: json['Menuitem_id'],
+    );
+  }
+}
+
+class MenuItems {
+  final String image;
+
+  MenuItems({required this.image});
+
+  factory MenuItems.fromJson(Map<String, dynamic> json) {
+    return MenuItems(
+      image: json['Image'],
+    );
+  }
+}
+
+class ProfileModel {
+  final String username;
+  final String email;
+  final String phoneNumber;
+  final String address;
+  final String country;
+  final String district;
+  final String place;
+  final String? idImage;
+  final String gender;
+  final String? profilePic;
+
+  ProfileModel({
+    required this.username,
+    required this.email,
+    required this.phoneNumber,
+    required this.address,
+    required this.country,
+    required this.district,
+    required this.place,
+    this.idImage,
+    required this.gender,
+    this.profilePic,
+  });
+
+  factory ProfileModel.fromJson(Map<String, dynamic> json) {
+    return ProfileModel(
+      username: json['Username'] ?? '',
+      email: json['Email'] ?? '',
+      phoneNumber: json['Phonenumber'] ?? '',
+      address: json['Address'] ?? '',
+      country: json['Country'] ?? '',
+      district: json['District'] ?? '',
+      place: json['Place'] ?? '',
+      idImage: json['Id_Image'],
+      gender: json['Gender'] ?? '',
+      profilePic: json['Profile_pic'],
+    );
+  }
+}
