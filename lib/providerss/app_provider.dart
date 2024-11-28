@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:broadway/food_app/food_delivery_homepage.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
@@ -8,7 +7,6 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-
 import '../food_app/restaurant_model.dart';
 import '../login/forgot_password.dart';
 import '../login/loginpage.dart';
@@ -158,52 +156,41 @@ class MainProvider extends ChangeNotifier {
   final TextEditingController passwordController = TextEditingController();
 
   bool _isLoading = false;
-
   bool get isLoading => _isLoading;
   late final Dio _dio;
   PersistCookieJar? _cookieJar;
-
   List<NearbyRestaurant> _nearbyRestaurants = [];
-
   List<Restaurant> _restaurants = [];
   List<PopularItem> _popularItems = [];
   List<FoodCategory> _foodCategories = [];
   List<dynamic> menuResults = [];
   List<dynamic> restaurantResults = [];
   List<dynamic>? currentSearchResults;
-
   List<NearbyRestaurant> get nearbyRestaurants => _nearbyRestaurants;
   List<Category> _categories = [];
-
   List<Category> get categories => _categories;
-
   List<Restaurant> get restaurants => _restaurants;
-
   List<PopularItem> get popularItems => _popularItems;
-
   List<FoodCategory> get foodCategories => _foodCategories;
   Restaurant? _restaurantDetails;
-
   Restaurant? get restaurantDetails => _restaurantDetails;
   String _error = '';
   int _quantity = 1;
-
   String get error => _error;
-
   int get quantity => _quantity;
   String _categoryError = '';
-
   String get categoryError => _categoryError;
   bool _isLoadingCategories = false;
-
   bool get isLoadingCategories => _isLoadingCategories;
-
   double _totalPrice = 0.0;
   double get totalPrice => _totalPrice;
   List<CartItem> _cartItems = [];
   List<CartItem> get cartItems => _cartItems;
   ProfileModel? _userProfile;
   ProfileModel? get userProfile => _userProfile;
+  bool _hasSeenOnboarding = false;
+  bool get hasSeenOnboarding => _hasSeenOnboarding;
+
 
   MainProvider() {
     _dio = Dio();
@@ -258,6 +245,50 @@ class MainProvider extends ChangeNotifier {
       return '';
     }
   }
+
+  Future<void> loadOnboardingState() async {
+    if (_cookieJar == null) {
+      print('CookieJar is null during loadOnboardingState');
+      return;
+    }
+
+    try {
+      final cookies = await _cookieJar!.loadForRequest(Uri.parse('app://onboarding'));
+      print('Loaded cookies: $cookies');
+
+      final onboardingCookie = cookies.firstWhere(
+            (cookie) => cookie.name == 'onboarding_state',
+        orElse: () => Cookie('onboarding_state', 'false'),
+      );
+
+      print('Onboarding cookie value: ${onboardingCookie.value}');
+      _hasSeenOnboarding = onboardingCookie.value == 'true';
+
+      print('Has seen onboarding: $_hasSeenOnboarding');
+    } catch (e) {
+      print('Error loading onboarding state: $e');
+      _hasSeenOnboarding = false;
+    }
+    notifyListeners();
+  }
+
+  Future<void> setOnboardingComplete() async {
+    if (_cookieJar == null) {
+      print('CookieJar is null during setOnboardingComplete');
+      return;
+    }
+
+    final onboardingCookie = Cookie('onboarding_state', 'true')
+      ..path = '/'
+      ..maxAge = 31536000; // 1 year in seconds
+
+    await _cookieJar!.saveFromResponse(Uri.parse('app://onboarding'), [onboardingCookie]);
+    _hasSeenOnboarding = true;
+    print('Onboarding set to complete. Saved cookie.');
+    notifyListeners();
+  }
+
+
 
   /// Basic login authentication
   Future<bool> login(BuildContext context) async {
@@ -708,6 +739,105 @@ class MainProvider extends ChangeNotifier {
     _quantity = 1;
     notifyListeners();
   }
+
+  ///apply code
+  Future<void> applyPromoCode(BuildContext context, String code) async {
+    await ensureCookieJarInitialized();
+
+    const url = 'http://broadway.extramindtech.com/food/promocode/';
+    final body = {'Code': code};
+
+    try {
+      final cookieString = await getCookieString(Uri.parse(url));
+      final response = await _dio.post(
+        url,
+        data: jsonEncode(body),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieString,
+          },
+          validateStatus: (status) => true, // Accept all responses for debugging
+        ),
+      );
+
+      print('Promo Code response status: ${response.statusCode}');
+      print('Promo Code response data: ${response.data}');
+
+      if (response.statusCode == 200 && response.data != null) {
+        final message = response.data['msg'] ?? 'Promo code applied successfully.';
+        final newTotal = response.data['totalPrice'];
+        if (newTotal != null) {
+          _totalPrice = newTotal;
+          notifyListeners();
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      } else {
+        final errorMsg = response.data['msg'] ?? 'Failed to apply promo code.';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg)));
+      }
+    } catch (e) {
+      print('Error applying promo code: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('An error occurred. Please try again.')),
+      );
+    }
+  }
+  ///add order
+  Future<bool> placeOrder(BuildContext context, String paymentMethod) async {
+    try {
+      await ensureCookieJarInitialized();
+
+      const url = 'http://broadway.extramindtech.com/food/addorders/';
+      final cookieString = await getCookieString(Uri.parse(url));
+
+      final response = await _dio.post(
+        url,
+        data: {
+          "Payment_method": paymentMethod
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieString,
+          },
+        ),
+      );
+
+      print('Place Order response status: ${response.statusCode}');
+      print('Place Order response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        final razorpayOrderId = response.data['razorpay_order_id'];
+        if (response.data['msg'] == 'Order created, please proceed with payment.') {
+
+
+
+          // Show success message
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Order Placed Successfully')),
+            );
+          }
+          return true;
+        } else {
+          throw Exception('Order placement failed');
+        }
+      } else {
+        throw Exception('Failed to place order');
+      }
+    } catch (e) {
+      print('Error placing order: $e');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to place order: ${e.toString()}')),
+        );
+      }
+      return false;
+    }
+  }
+
 
   /// Handle profile update and navigation
   Future<void> handleAddressUpdate({

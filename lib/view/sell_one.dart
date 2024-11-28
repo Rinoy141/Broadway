@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../common/colors.dart';
 import '../common/images.dart';
-import '../main.dart';
+
 
 class SellOne extends StatefulWidget {
   const SellOne({super.key});

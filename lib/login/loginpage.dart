@@ -1,10 +1,8 @@
-import 'package:broadway/food_app/best_partners_page.dart';
-import 'package:broadway/login/app_selection.dart';
-import 'package:broadway/profile/edit_profile.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'forgot_pass_page.dart';
-import 'forgot_password.dart';
+
 import '../providerss/app_provider.dart';
 
 class LoginPage extends StatelessWidget {

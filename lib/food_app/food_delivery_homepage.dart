@@ -78,10 +78,12 @@ class FoodDeliveryHomePage extends StatelessWidget {
   Widget _buildCategorySection() {
     return Consumer<MainProvider>(
       builder: (context, provider, child) {
-
-        if (provider.categories.isEmpty && !provider.isLoadingCategories) {
-          provider.fetchCategories();
-        }
+        // Ensure fetchCategories() is only called once after the first build
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (provider.categories.isEmpty && !provider.isLoadingCategories) {
+            provider.fetchCategories();
+          }
+        });
 
         return Card(
           color: Colors.white,
@@ -95,14 +97,17 @@ class FoodDeliveryHomePage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                        'Category',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                      'Category',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     TextButton(
-                        onPressed: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => CartPage(),));
-                        },
-                        child: const Text('See All')
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => CartPage()),
+                        );
+                      },
+                      child: const Text('See All'),
                     ),
                   ],
                 ),
@@ -127,7 +132,8 @@ class FoodDeliveryHomePage extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => MenuPage(categoryId: category.id),
+                                    builder: (context) =>
+                                        MenuPage(categoryId: category.id),
                                   ),
                                 );
                               },
@@ -185,6 +191,7 @@ class FoodDeliveryHomePage extends StatelessWidget {
       },
     );
   }
+
 }
 
 

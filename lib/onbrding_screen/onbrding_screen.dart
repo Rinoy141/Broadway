@@ -1,9 +1,12 @@
+import 'package:broadway/login/registration.dart';
 import 'package:broadway/onbrding_screen/logo.dart';
 import 'package:broadway/onbrding_screen/onbrding_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
+import '../login/loginpage.dart';
+import '../providerss/app_provider.dart';
 import 'onbrding_model.dart';
 
 class OnboardingScreen extends StatelessWidget {
@@ -35,7 +38,9 @@ class OnboardingScreen extends StatelessWidget {
                   width: MediaQuery.of(context).size.width * 0.9,
                   child: PageView.builder(
                     onPageChanged: (value) {
-                      OnboardingState().currentIndex;
+
+                        Provider.of<OnboardingState>(context, listen: false).updateCurrentIndex(value);
+
                     },
                     itemCount: onbrdingModelList.length,
                     controller: pageController,
@@ -61,7 +66,12 @@ class OnboardingScreen extends StatelessWidget {
                                 color: const Color(0xff004CFF),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 onPressed: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => const LogoPage(),));
+                                  Provider.of<MainProvider>(context, listen: false)
+                                      .setOnboardingComplete();
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(builder: (context) =>  LogoPage()),
+                                  );
                                 },
                                 child: Text(
                                   onbrdingModelList[index].buttonText!,

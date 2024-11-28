@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 class OnboardingState extends ChangeNotifier {
-  int _currentIndex = 0;
+  int currentIndex = 0;
 
-  int get currentIndex => _currentIndex;
 
-  void setCurrentIndex(int index) {
-    _currentIndex = index;
+
+  void updateCurrentIndex(int index) {
+    currentIndex = index;
     notifyListeners();
   }
 }
