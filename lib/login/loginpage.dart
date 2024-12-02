@@ -87,27 +87,35 @@ class LoginPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 30),
                         if (loginProvider.isLoading)
-                          const CircularProgressIndicator()
+                           Center(child: CircularProgressIndicator())
                         else
                           MaterialButton(
                             minWidth: MediaQuery.of(context).size.width * 0.9,
                             height: MediaQuery.of(context).size.width * 0.13,
                             color: const Color(0xff004CFF),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(17)
+                              borderRadius: BorderRadius.circular(17),
                             ),
-                            onPressed: () {
+                            onPressed: loginProvider.isLoading ? null : () {
                               loginProvider.handleLogin(context);
                             },
-                            child: const Text(
-                              "Next",
-                              style: TextStyle(
+                            child: Center( // Ensure content is centered
+                              child: loginProvider.isLoading
+                                  ? const CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xffF3F3F3)),
+                              )
+                                  : const Text(
+                                "Next",
+                                style: TextStyle(
                                   color: Color(0xffF3F3F3),
                                   fontSize: 20,
-                                  fontWeight: FontWeight.w300
+                                  fontWeight: FontWeight.w300,
+                                ),
                               ),
                             ),
                           ),
+
+
                         const SizedBox(height: 16),
                         Center(
                           child: TextButton(

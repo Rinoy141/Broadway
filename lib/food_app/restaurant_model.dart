@@ -358,7 +358,7 @@ class CartItem {
   final int id;
   final MenuItems menuItems;
   final String itemName;
-  final int quantity;
+   int quantity;
   final double price;
   final double totalPrice;
   final double deliveryCharge;

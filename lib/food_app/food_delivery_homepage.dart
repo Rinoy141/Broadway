@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:broadway/food_app/confirm_order_page.dart';
 import 'package:broadway/food_app/nearby.dart';
+import 'package:broadway/profile/edit_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providerss/app_provider.dart';
@@ -104,7 +105,7 @@ class FoodDeliveryHomePage extends StatelessWidget {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => CartPage()),
+                          MaterialPageRoute(builder: (context) => EditProfilePage()),
                         );
                       },
                       child: const Text('See All'),

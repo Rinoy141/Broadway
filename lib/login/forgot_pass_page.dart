@@ -1,5 +1,3 @@
-import 'package:flutter/cupertino.dart';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providerss/app_provider.dart';
@@ -30,13 +28,13 @@ class ForgotPasswordScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Enter your email address and we'll send you instructions to reset your password.",
+                  "Enter your email address and we'll send you OTP to reset your password.",
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 14,
                   ),
                 ),
-                 SizedBox(height: 32),
+                const SizedBox(height: 32),
                 TextField(
                   controller: provider.emailController,
                   decoration: InputDecoration(
@@ -62,7 +60,7 @@ class ForgotPasswordScreen extends StatelessWidget {
                     ),
                     onPressed: () => provider.forgotPassword(context),
                     child: const Text(
-                      "Send Reset Link",
+                      "Send OTP",
                       style: TextStyle(
                         color: Color(0xffF3F3F3),
                         fontSize: 20,
@@ -70,6 +68,46 @@ class ForgotPasswordScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+
+                if (provider.isOTPSent) ...[
+                  const SizedBox(height: 32),
+                  TextField(
+                    controller: provider.otpController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    decoration: InputDecoration(
+                      hintText: 'Enter OTP sent to your Email',
+                      counterText: '', // Hide character count
+                      filled: true,
+                      fillColor: Colors.grey[200],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (provider.isLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else
+                    MaterialButton(
+                      minWidth: MediaQuery.of(context).size.width * 0.9,
+                      height: MediaQuery.of(context).size.width * 0.13,
+                      color: const Color(0xff004CFF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(17),
+                      ),
+                      onPressed: () => provider.verifyOTP(context),
+                      child: const Text(
+                        "Verify OTP",
+                        style: TextStyle(
+                          color: Color(0xffF3F3F3),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                    ),
+                ],
               ],
             ),
           ),
@@ -78,5 +116,3 @@ class ForgotPasswordScreen extends StatelessWidget {
     );
   }
 }
-
-

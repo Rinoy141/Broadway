@@ -1,14 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:broadway/food_app/food_delivery_homepage.dart';
+import 'package:broadway/login/app_selection.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:path_provider/path_provider.dart';
+import '../login/change_password.dart';
 import '../food_app/restaurant_model.dart';
-import '../login/forgot_password.dart';
 import '../login/loginpage.dart';
 import '../profile/edit_profile.dart';
 
@@ -154,6 +156,8 @@ class RegistrationProvider with ChangeNotifier {
 class MainProvider extends ChangeNotifier {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController newPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -372,10 +376,10 @@ class MainProvider extends ChangeNotifier {
         );
 
         if (hasProfile) {
-          print('Profile exists, navigating to BestPartnersPage');
+          print('Profile exists, navigating to App selection Page');
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => FoodDeliveryHomePage()),
+            MaterialPageRoute(builder: (context) => AppSelection()),
           );
         } else {
           print('Profile not set, navigating to EditProfilePage');
@@ -398,7 +402,85 @@ class MainProvider extends ChangeNotifier {
     }
   }
 
+  ///change password
+  Future<bool> changePassword(BuildContext context) async {
+    await ensureCookieJarInitialized();
+
+
+    if (newPasswordController.text != confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('New passwords do not match'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    const url = 'http://broadway.extramindtech.com/user/changepassword/';
+    final body = {
+      'Password': newPasswordController.text,
+    };
+
+    try {
+
+      final preCookies = await getCookieString(Uri.parse(url));
+      print('Cookies before change password: $preCookies');
+
+      final response = await _dio.put(
+        url,
+        data: jsonEncode(body),
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': preCookies,
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      print('Change Password response status: ${response.statusCode}');
+      print('Change Password response data: ${response.data}');
+
+      if (response.statusCode == 200 && response.data['msg'] == 'Password changed successfully') {
+        // Show success snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Password changed successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) =>  LoginPage())
+        );
+        return true;
+
+      } else {
+
+        final errorMsg = response.data['msg'] ?? 'Failed to change password';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false;
+      }
+    } catch (e) {
+      print('Error during password change: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+  }
+
   /// Add or Update User Address
+
   Future<bool> addOrUpdateAddress({
     required String country,
     required String address,
@@ -408,52 +490,52 @@ class MainProvider extends ChangeNotifier {
   }) async
   {await ensureCookieJarInitialized();
 
-    const url = 'http://broadway.extramindtech.com/user/addaddress/';
-    final body = {
-      'Country': country,
-      'Address': address,
-      'District': district,
-      'Place': place,
-      'Gender': gender,
-    };
+  const url = 'http://broadway.extramindtech.com/user/addaddress/';
+  final body = {
+    'Country': country,
+    'Address': address,
+    'District': district,
+    'Place': place,
+    'Gender': gender,
+  };
 
-    print('Request Body for Add/Update Address: $body');
+  print('Request Body for Add/Update Address: $body');
 
-    try {
-      final cookieString = await getCookieString(Uri.parse(url));
-      print('Cookies for address update: $cookieString');
+  try {
+    final cookieString = await getCookieString(Uri.parse(url));
+    print('Cookies for address update: $cookieString');
 
-      final response = await _dio.post(
-        url,
-        data: jsonEncode(body),
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-          },
-        ),
-      );
+    final response = await _dio.post(
+      url,
+      data: jsonEncode(body),
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+        },
+      ),
+    );
 
-      print('Add/Update Address response status: ${response.statusCode}');
-      print('Add/Update Address response data: ${response.data}');
+    print('Add/Update Address response status: ${response.statusCode}');
+    print('Add/Update Address response data: ${response.data}');
 
-      if (response.statusCode == 200 &&
-          (response.data['msg'] == 'Data saved Successfully' ||
-              response.data['msg']
-                      ?.toString()
-                      .toLowerCase()
-                      .contains('success') ==
-                  true)) {
-        print('Successfully added/updated address: ${response.data['msg']}');
-        return true;
-      } else {
-        print('Failed to add/update address: ${response.data['msg']}');
-        return false;
-      }
-    } catch (e) {
-      print('Error during add/update address: $e');
+    if (response.statusCode == 200 &&
+        (response.data['msg'] == 'Data saved Successfully' ||
+            response.data['msg']
+                ?.toString()
+                .toLowerCase()
+                .contains('success') ==
+                true)) {
+      print('Successfully added/updated address: ${response.data['msg']}');
+      return true;
+    } else {
+      print('Failed to add/update address: ${response.data['msg']}');
       return false;
     }
+  } catch (e) {
+    print('Error during add/update address: $e');
+    return false;
+  }
   }
 
   /// Check if user profile is set
@@ -475,7 +557,7 @@ class MainProvider extends ChangeNotifier {
             'Cookie': cookieString,
           },
           validateStatus: (status) =>
-              true, // Allow all status codes for debugging
+          true, // Allow all status codes for debugging
         ),
       );
 
@@ -520,7 +602,7 @@ class MainProvider extends ChangeNotifier {
             'Content-Type': 'application/json',
             'Cookie': cookieString,
           },
-          validateStatus: (status) => true, // Allow all status codes for debugging
+          validateStatus: (status) => true,
         ),
       );
 
@@ -542,6 +624,55 @@ class MainProvider extends ChangeNotifier {
       _userProfile = null;
       notifyListeners();
       return null;
+    }
+  }
+
+
+  /// Handle profile update and navigation
+  Future<void> handleAddressUpdate({
+    required BuildContext context,
+    required String country,
+    required String address,
+    required String district,
+    required String place,
+    required String gender,
+  }) async
+  {
+    if (!context.mounted) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final success = await addOrUpdateAddress(
+        country: country,
+        address: address,
+        district: district,
+        place: place,
+        gender: gender,
+      );
+
+      if (!context.mounted) return;
+
+      if (success) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully')),
+        );
+
+        // Navigate to BestPartnersPage
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => FoodDeliveryHomePage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update profile')),
+        );
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -594,15 +725,12 @@ class MainProvider extends ChangeNotifier {
   }
   Future<void> fetchCartItems() async {
     try {
-      print('Starting fetchCartItems()');
       _isLoading = true;
       _error = '';
       notifyListeners();
-      print('Loading state set to true, error cleared');
 
       final url = 'http://broadway.extramindtech.com/food/viewcart/';
       final cookieString = await getCookieString(Uri.parse(url));
-      print('Cookie string obtained: $cookieString');
 
       final response = await _dio.get(
         url,
@@ -613,52 +741,38 @@ class MainProvider extends ChangeNotifier {
           },
         ),
       );
-      print('Response received. Status code: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        print('Response data: $responseData');
-
-        // Ensure 'Total Price' is converted to double
         final totalPriceValue = responseData['Total Price'];
 
         _cartItems = (responseData['Items'] as List)
             .map((item) => CartItem.fromJson(item))
             .toList();
 
-        // Convert Total Price to double, handling potential null or dynamic type
         _totalPrice = totalPriceValue is num
             ? totalPriceValue.toDouble()
             : double.tryParse(totalPriceValue.toString()) ?? 0.0;
-
-        print('Cart items parsed: ${cartItems.length}');
-        print('Total price: $totalPrice');
       } else {
-        print('Failed to load cart items. Status code: ${response.statusCode}');
         throw Exception('Failed to load cart items');
       }
     } catch (e) {
-      print('Error in fetchCartItems(): $e');
       _error = 'Error fetching cart items: ${e.toString()}';
       _cartItems = [];
       _totalPrice = 0.0;
     } finally {
       _isLoading = false;
       notifyListeners();
-      print('fetchCartItems() completed. Loading state set to false');
     }
   }
 
   Future<void> removeCartItem(int cartItemId) async {
     try {
-      print('Starting removeCartItem() for item ID: $cartItemId');
       _isLoading = true;
       notifyListeners();
 
-      final url =
-          'http://broadway.extramindtech.com/food/deletecart/$cartItemId';
+      final url = 'http://broadway.extramindtech.com/food/deletecart/$cartItemId';
       final cookieString = await getCookieString(Uri.parse(url));
-      print('Cookie string obtained: $cookieString');
 
       final response = await _dio.delete(
         url,
@@ -669,35 +783,30 @@ class MainProvider extends ChangeNotifier {
           },
         ),
       );
-      print('Response received. Status code: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        print('Cart item removed successfully');
-        await fetchCartItems(); // Refresh cart after removing item
+        // Remove the item from the list
+        _cartItems.removeWhere((item) => item.id == cartItemId);
+
+        // Recalculate total price
+        _totalPrice = _cartItems.fold(0.0, (total, item) => total + (item.price * item.quantity));
+
+        notifyListeners();
       } else {
-        print(
-            'Failed to remove cart item. Status code: ${response.statusCode}');
         throw Exception('Failed to remove cart item');
       }
     } catch (e) {
-      print('Error in removeCartItem(): $e');
-      _isLoading = false;
       _error = 'Error removing cart item: ${e.toString()}';
       notifyListeners();
+      rethrow;
+    } finally {
+      _isLoading = false;
     }
   }
-
   Future<void> updateCartItemQuantity(int cartItemId, int newQuantity) async {
     try {
-      print(
-          'Starting updateCartItemQuantity() for item ID: $cartItemId, new quantity: $newQuantity');
-      _isLoading = true;
-      notifyListeners();
-
-      final url =
-          'http://broadway.extramindtech.com/food/cartupdate/$cartItemId';
+      final url = 'http://broadway.extramindtech.com/food/cartupdate/$cartItemId';
       final cookieString = await getCookieString(Uri.parse(url));
-      print('Cookie string obtained: $cookieString');
 
       final response = await _dio.put(
         url,
@@ -710,23 +819,27 @@ class MainProvider extends ChangeNotifier {
           },
         ),
       );
-      print('Response received. Status code: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        print('Cart item quantity updated successfully');
-        await fetchCartItems(); // Refresh cart after updating quantity
+
+        final updatedItemIndex = _cartItems.indexWhere((item) => item.id == cartItemId);
+        if (updatedItemIndex != -1) {
+          _cartItems[updatedItemIndex].quantity = newQuantity;
+
+
+          _totalPrice = _cartItems.fold(0.0, (total, item) => total + (item.price * item.quantity));
+
+          notifyListeners();
+        }
       } else {
-        print(
-            'Failed to update cart item quantity. Status code: ${response.statusCode}');
         throw Exception('Failed to update cart item quantity');
       }
     } catch (e) {
       print('Error in updateCartItemQuantity(): $e');
-      _isLoading = false;
-      _error = 'Error updating cart item quantity: ${e.toString()}';
-      notifyListeners();
+      throw e;
     }
   }
+
 
   void updateQuantity(int change) {
     if (_quantity + change >= 1) {
@@ -784,7 +897,7 @@ class MainProvider extends ChangeNotifier {
     }
   }
   ///add order
-  Future<bool> placeOrder(BuildContext context, String paymentMethod) async {
+  Future<bool> placeOrder(BuildContext context, String selectedPaymentMethod) async {
     try {
       await ensureCookieJarInitialized();
 
@@ -794,26 +907,30 @@ class MainProvider extends ChangeNotifier {
       final response = await _dio.post(
         url,
         data: {
-          "Payment_method": paymentMethod
+          "payment_method": selectedPaymentMethod
+
         },
+
+
         options: Options(
           headers: {
             'Content-Type': 'application/json',
             'Cookie': cookieString,
           },
+
         ),
       );
-
       print('Place Order response status: ${response.statusCode}');
       print('Place Order response data: ${response.data}');
+      print('Order type: $selectedPaymentMethod');
 
       if (response.statusCode == 200) {
-        final razorpayOrderId = response.data['razorpay_order_id'];
+
         if (response.data['msg'] == 'Order created, please proceed with payment.') {
 
 
 
-          // Show success message
+
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Order Placed Successfully')),
@@ -839,53 +956,7 @@ class MainProvider extends ChangeNotifier {
   }
 
 
-  /// Handle profile update and navigation
-  Future<void> handleAddressUpdate({
-    required BuildContext context,
-    required String country,
-    required String address,
-    required String district,
-    required String place,
-    required String gender,
-  }) async
-  {
-    if (!context.mounted) return;
 
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final success = await addOrUpdateAddress(
-        country: country,
-        address: address,
-        district: district,
-        place: place,
-        gender: gender,
-      );
-
-      if (!context.mounted) return;
-
-      if (success) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
-        );
-
-        // Navigate to BestPartnersPage
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => FoodDeliveryHomePage()),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update profile')),
-        );
-      }
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
 
   ///search
 
@@ -1290,21 +1361,20 @@ class MainProvider extends ChangeNotifier {
 }
 
 ///FORGOT PASSWORD
+
+
 class ForgotPasswordProvider extends ChangeNotifier {
   final TextEditingController emailController = TextEditingController();
+  final TextEditingController otpController = TextEditingController();
 
-  bool _isLoading = false;
-
-  bool get isLoading => _isLoading;
+  bool isLoading = false;
+  bool isOTPSent = false;
 
   Future<bool> forgotPassword(BuildContext context) async {
-    _isLoading = true;
+    isLoading = true;
     notifyListeners();
 
-    print('Attempting to send password reset email...');
-
-    final url =
-        Uri.parse('http://broadway.extramindtech.com/user/forgot-password/');
+    final url = Uri.parse('http://broadway.extramindtech.com/user/sendotpemail/');
     final body = {
       'Email': emailController.text,
     };
@@ -1316,103 +1386,124 @@ class ForgotPasswordProvider extends ChangeNotifier {
         headers: {'Content-Type': 'application/json'},
       );
 
-      // Check if the response content type is JSON before parsing
-      if (response.headers['content-type']?.contains('application/json') ==
-          true) {
+      if (response.headers['content-type']?.contains('application/json') == true) {
         final data = jsonDecode(response.body);
         print('Forgot password API response: $data');
 
         if (response.statusCode == 200) {
-          print('Status 200: Success - Password reset email sent.');
-          if (data['msg'] == 'Password reset email sent') {
-            showSuccessDialog(context,
-                'Password reset email has been sent to your email address.');
-            return true;
-          } else {
-            showErrorDialog(context, data['msg'] ?? 'An error occurred');
-            return false;
-          }
-        } else if (response.statusCode == 400) {
-          print(
-              'Status 400: Bad Request - Possibly invalid email format or missing data.');
-          showErrorDialog(context,
-              'Invalid email format or missing data. Please check your input.');
-          return false;
-        } else if (response.statusCode == 404) {
-          print('Status 404: Not Found - The endpoint does not exist.');
-          showErrorDialog(
-              context, 'Unable to reach the server. Please try again later.');
-          return false;
-        } else if (response.statusCode == 500) {
-          print('Status 500: Internal Server Error - Server-side issue.');
-          showErrorDialog(context,
-              'Server is currently unavailable. Please try again later.');
-          return false;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('OTP sent successfully to your email'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          isOTPSent = true;
+          return true;
         } else {
-          print(
-              'Unexpected status code: ${response.statusCode} - ${response.body}');
-          showErrorDialog(
-              context, 'An error occurred. Please try again later.');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to send OTP. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
           return false;
         }
       } else {
-        print('Received non-JSON response: ${response.body}');
-        showErrorDialog(context,
-            'Unexpected response from server. Please try again later.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Unexpected response from server'),
+            backgroundColor: Colors.red,
+          ),
+        );
         return false;
       }
     } catch (e) {
       print('Exception occurred during password reset: $e');
-      showErrorDialog(context, 'An error occurred. Please try again later.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return false;
     } finally {
-      _isLoading = false;
+      isLoading = false;
       notifyListeners();
     }
   }
 
-  void showErrorDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
+  Future<bool> verifyOTP(BuildContext context) async {
+    isLoading = true;
+    notifyListeners();
 
-  void showSuccessDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Success'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const PasswordRecoveryScreen(),
-                ),
-              );
-            },
-            child: const Text('OK'),
+    final url = Uri.parse('http://broadway.extramindtech.com/user/verifyotp/');
+    final body = {
+      'Otp': otpController.text,
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        body: jsonEncode(body),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.headers['content-type']?.contains('application/json') == true) {
+        final data = jsonDecode(response.body);
+        print('OTP Verification API response: $data');
+
+        if (response.statusCode == 200 ) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('OTP verified successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          // Navigate to Change Password Screen
+          Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ChangePasswordScreen())
+          );
+
+          return true;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(data['message'] ?? 'Invalid OTP'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return false;
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Unexpected server response'),
+            backgroundColor: Colors.red,
           ),
-        ],
-      ),
-    );
+        );
+        return false;
+      }
+    } catch (e) {
+      print('Exception occurred during OTP verification: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   @override
   void dispose() {
     emailController.dispose();
+    otpController.dispose();
     super.dispose();
   }
 }

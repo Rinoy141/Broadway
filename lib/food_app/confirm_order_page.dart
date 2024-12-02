@@ -165,14 +165,35 @@ class _CartPageState extends State<CartPage> {
                       itemCount: cartProvider.cartItems.length,
                       itemBuilder: (context, index) {
                         final cartItem = cartProvider.cartItems[index];
-                        final onQuantityChanged = (int newQuantity) {
-                          if (newQuantity > 0) {
-                            cartProvider.updateCartItemQuantity(
-                                cartItem.id, newQuantity);
-                          } else {
-                            cartProvider.removeCartItem(cartItem.id);
+                        final onQuantityChanged = (int newQuantity) async {
+                          try {
+                            if (newQuantity > 0) {
+
+                              setState(() {
+                                cartItem.quantity = newQuantity;
+                              });
+
+
+                              await cartProvider.updateCartItemQuantity(
+                                  cartItem.id, newQuantity);
+                            } else {
+                              await cartProvider.removeCartItem(cartItem.id);
+                            }
+                          } catch (e) {
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                    'Failed to update quantity: ${e.toString()}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+
+
+                            await cartProvider.fetchCartItems();
                           }
                         };
+
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
                           child: Row(
@@ -304,57 +325,59 @@ class _CartPageState extends State<CartPage> {
           }
 
           // Main build method
-          return Column(
-            children: [
-              _buildDeliverySection(context),
-              const SizedBox(height: 10),
-              _buildRestaurantSection(context),
-              const SizedBox(height: 10),
-              _buildVoucherContainer(context),
-              const SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _paymentOption('Online Payment', Icons.payment,
-                        '\$${(cartProvider.cartItems.first.totalPrice.toStringAsFixed(2))}'),
-                    _paymentOption('Cash', Icons.attach_money,
-                        '\$${(cartProvider.cartItems.first.totalPrice.toStringAsFixed(2))}'),
-                  ],
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (cartProvider.cartItems.isNotEmpty) {
-                    cartProvider.placeOrder(
-                        context,
-                        selectedPaymentMethod == 'Online Payment'
-                            ? 'online_payment'
-                            : 'cash_on_delivery');
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Your cart is empty')),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xff004BFE),
-                  padding: EdgeInsets.symmetric(horizontal: 120),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildDeliverySection(context),
+                const SizedBox(height: 10),
+                _buildRestaurantSection(context),
+                const SizedBox(height: 10),
+                _buildVoucherContainer(context),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _paymentOption('Online Payment', Icons.payment,
+                          '\$${(cartProvider.cartItems.first.totalPrice.toStringAsFixed(2))}'),
+                      _paymentOption('Cash On Delivery', Icons.attach_money,
+                          '\$${(cartProvider.cartItems.first.totalPrice.toStringAsFixed(2))}'),
+                    ],
                   ),
                 ),
-                child: const Text(
-                  'Proceed to Checkout',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                ElevatedButton(
+                  onPressed: () {
+                    if (cartProvider.cartItems.isNotEmpty) {
+                      cartProvider.placeOrder(
+                          context,
+                          selectedPaymentMethod == 'Online Payment'
+                              ? 'Online payment'
+                              : 'cash_on_delivery');
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Your cart is empty')),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xff004BFE),
+                    padding: EdgeInsets.symmetric(horizontal: 120),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    'Proceed to Checkout',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),
