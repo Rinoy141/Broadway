@@ -3,6 +3,9 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:broadway/food_app/confirm_order_page.dart';
 import 'package:broadway/food_app/nearby.dart';
+import 'package:broadway/food_app/order_history%20page.dart';
+import 'package:broadway/food_app/popular_restaurants.dart';
+import 'package:broadway/food_app/recommended_restaurants.dart';
 import 'package:broadway/profile/edit_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -105,7 +108,7 @@ class FoodDeliveryHomePage extends StatelessWidget {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => EditProfilePage()),
+                          MaterialPageRoute(builder: (context) => OrderHistoryPage()),
                         );
                       },
                       child: const Text('See All'),
@@ -200,7 +203,7 @@ class FoodDeliveryHomePage extends StatelessWidget {
 
   Widget _buildTabSection(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 3,
       child: Column(
         children: [
           Container(
@@ -209,9 +212,9 @@ class FoodDeliveryHomePage extends StatelessWidget {
               isScrollable: false,
               tabs: [
                 Tab(text: 'Nearby'),
-                Tab(text: 'Sales'),
-                Tab(text: 'Rate'),
-                Tab(text: 'Fast'),
+                Tab(text: 'Recommended'),
+                Tab(text: 'Popular'),
+
               ],
             ),
           ),
@@ -220,9 +223,9 @@ class FoodDeliveryHomePage extends StatelessWidget {
             child: TabBarView(
               children: [
                 NearbyRestaurantsWidget(),
-                _buildSalesSection(),
-                _buildRateSection(),
-                _buildFastSection(),
+               RecommendedRestaurantsWidget(),
+                MostPopularRestaurantsWidget(),
+
               ],
             ),
           ),
@@ -233,15 +236,7 @@ class FoodDeliveryHomePage extends StatelessWidget {
 
 
 
-  Widget _buildSalesSection() {
-    return const Center(child: Text('Sales Section'));
-  }
 
-  Widget _buildRateSection() {
-    return const Center(child: Text('Rate Section'));
-  }
 
-  Widget _buildFastSection() {
-    return const Center(child: Text('Fast Section'));
-  }
+
 

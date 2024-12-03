@@ -289,7 +289,7 @@ class NearbyRestaurant {
       distance: (json['distance_km'] is num)
           ? (json['distance_km'] as num).toDouble()
           : 0.0,
-      rating: json['rating'] ?? 'No ratings yet',
+      rating: json['rating'] != null ? json['rating'].toString() : 'No ratings yet',
       status: json['status'] ?? 'Unknown',
       deliveryFee: json['delivery_fee'] is num
           ? (json['delivery_fee'] as num).toInt()
@@ -447,6 +447,127 @@ class ProfileModel {
       idImage: json['Id_Image'],
       gender: json['Gender'] ?? '',
       profilePic: json['Profile_pic'],
+    );
+  }
+}
+
+class OrderHistoryItem {
+  final int id;
+  final int restaurantId;
+  final String customerName;
+  final String customerLocation;
+  final String customerPhoneNumber;
+  final String itemName;
+  final int quantity;
+  final double price;
+  final String status;
+  final DateTime dateTime;
+  final double deliveryCharge;
+  final double totalPrice;
+  final double offerPrice;
+  final String paymentMethod;
+  final String promoCode;
+  final bool promoUsed;
+  final OrderRestaurantDetails restaurantDetails;
+
+  OrderHistoryItem({
+    required this.id,
+    required this.restaurantId,
+    required this.customerName,
+    required this.customerLocation,
+    required this.customerPhoneNumber,
+    required this.itemName,
+    required this.quantity,
+    required this.price,
+    required this.status,
+    required this.dateTime,
+    required this.deliveryCharge,
+    required this.totalPrice,
+    required this.offerPrice,
+    required this.paymentMethod,
+    required this.promoCode,
+    required this.promoUsed,
+    required this.restaurantDetails,
+  });
+
+  factory OrderHistoryItem.fromJson(Map<String, dynamic> json) {
+    return OrderHistoryItem(
+      id: json['id'] ?? 0,
+      restaurantId: json['Restaurant_id'] ?? 0,
+      customerName: json['Customer_Name'] ?? '',
+      customerLocation: json['Customer_Location'] ?? '',
+      customerPhoneNumber: json['Customer_Phonenumber'] ?? '',
+      itemName: json['Item_name'] ?? '',
+      quantity: json['Quantity'] ?? 0,
+      price: (json['Price'] ?? 0.0).toDouble(),
+      status: json['status'] ?? '',
+      dateTime: DateTime.parse(json['DateTime'] ?? DateTime.now().toIso8601String()),
+      deliveryCharge: (json['Deliverycharge'] ?? 0.0).toDouble(),
+      totalPrice: (json['TotalPrice'] ?? 0.0).toDouble(),
+      offerPrice: (json['Offer_price'] ?? 0.0).toDouble(),
+      paymentMethod: json['Payment_method'] ?? '',
+      promoCode: json['PromoCode'] ?? '0',
+      promoUsed: json['PromoUsed'] ?? false,
+      restaurantDetails: OrderRestaurantDetails.fromJson(json['Restaurant_details'] ?? {}),
+    );
+  }
+}
+
+class OrderRestaurantDetails {
+  final String restaurantName;
+  final String image;
+  final String place;
+  final int id;
+
+  OrderRestaurantDetails({
+    required this.restaurantName,
+    required this.image,
+    required this.place,
+    required this.id,
+  });
+
+  factory OrderRestaurantDetails.fromJson(Map<String, dynamic> json) {
+    return OrderRestaurantDetails(
+      restaurantName: json['Restaurant_Name'] ?? '',
+      image: json['Image'] ?? '',
+      place: json['Place'] ?? '',
+      id: json['id'] ?? 0,
+    );
+  }
+}
+
+///for popular section and recommended
+class RestaurantModel {
+  final int id;
+  final String name;
+  final String image;
+  final double rating;
+  final int distance;
+  final int deliveryFee;
+  final String location;
+  final String status;
+
+  RestaurantModel({
+    required this.id,
+    required this.name,
+    required this.image,
+    required this.rating,
+    required this.distance,
+    required this.deliveryFee,
+    required this.location,
+    required this.status,
+  });
+
+  factory RestaurantModel.fromJson(Map<String, dynamic> json) {
+    return RestaurantModel(
+      id: json['id'],
+      name: json['restaurant_name'],
+      image: json['image'],
+      rating: json['rating'].toDouble(),
+      distance: json['distance'],
+      deliveryFee: json['delivery_fee'],
+      location: json['location'],
+      status: json['status'],
     );
   }
 }

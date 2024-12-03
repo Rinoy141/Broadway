@@ -194,6 +194,27 @@ class MainProvider extends ChangeNotifier {
   ProfileModel? get userProfile => _userProfile;
   bool _hasSeenOnboarding = false;
   bool get hasSeenOnboarding => _hasSeenOnboarding;
+  List<OrderHistoryItem> _orderHistory = [];
+  List<OrderHistoryItem> get orderHistory => _orderHistory;
+  List<OrderHistoryItem> _ongoingOrders = [];
+  List<OrderHistoryItem> get ongoingOrders => _ongoingOrders;
+
+  bool _isOrderHistoryLoading = false;
+  bool get isOrderHistoryLoading => _isOrderHistoryLoading;
+
+  String _orderHistoryErrorMessage = '';
+  String get orderHistoryErrorMessage => _orderHistoryErrorMessage;
+
+  bool _isOngoingOrdersLoading = false;
+  bool get isOngoingOrdersLoading => _isOngoingOrdersLoading;
+
+  String _ongoingOrdersErrorMessage = '';
+  String get ongoingOrdersErrorMessage => _ongoingOrdersErrorMessage;
+
+  List<RestaurantModel> recommendedRestaurants = [];
+  List<RestaurantModel> mostPopularRestaurants = [];
+  bool isLoadingRecommended = false;
+  bool isLoadingMostPopular = false;
 
 
   MainProvider() {
@@ -663,7 +684,7 @@ class MainProvider extends ChangeNotifier {
         // Navigate to BestPartnersPage
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => FoodDeliveryHomePage()),
+          MaterialPageRoute(builder: (context) => AppSelection()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -926,20 +947,13 @@ class MainProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
 
-        if (response.data['msg'] == 'Order created, please proceed with payment.') {
-
-
-
-
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Order Placed Successfully')),
             );
           }
           return true;
-        } else {
-          throw Exception('Order placement failed');
-        }
+
       } else {
         throw Exception('Failed to place order');
       }
@@ -954,13 +968,170 @@ class MainProvider extends ChangeNotifier {
       return false;
     }
   }
+/// show order history
+  Future<void> fetchOrderHistory() async {
+    await ensureCookieJarInitialized();
+
+    _isOrderHistoryLoading = true;
+    _orderHistoryErrorMessage = '';
+    notifyListeners();
+
+    try {
+      const url = 'http://broadway.extramindtech.com/food/orderhistory/';
+      final cookieString = await getCookieString(Uri.parse(url));
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieString,
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> responseData = response.data;
+        _orderHistory = responseData
+            .map((item) => OrderHistoryItem.fromJson(item))
+            .toList();
+        _isOrderHistoryLoading = false;
+        notifyListeners();
+      } else {
+        _orderHistoryErrorMessage = 'Failed to load order history';
+        _isOrderHistoryLoading = false;
+        notifyListeners();
+      }
+    } catch (e) {
+      _orderHistoryErrorMessage = 'An error occurred: ${e.toString()}';
+      _isOrderHistoryLoading = false;
+      notifyListeners();
+    }
+  }
+  ///show ongoing order
+  Future<void> fetchOngoingOrders() async {
+    await ensureCookieJarInitialized();
+
+    _isOngoingOrdersLoading = true;
+    _ongoingOrdersErrorMessage = '';
+    notifyListeners();
+
+    try {
+      const url = 'http://broadway.extramindtech.com/food/ongoingorders/';
+      final cookieString = await getCookieString(Uri.parse(url));
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieString,
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+
+        if (response.data is List) {
+          final List<dynamic> responseData = response.data;
+          _ongoingOrders = responseData
+              .map((item) => OrderHistoryItem.fromJson(item))
+              .toList();
+        } else if (response.data is Map &&
+            response.data['msg'] == 'No item ongoing') {
+
+          _ongoingOrders = [];
+        } else {
+
+          _ongoingOrders = [];
+          _ongoingOrdersErrorMessage = 'Unexpected response format';
+        }
+
+        _isOngoingOrdersLoading = false;
+        notifyListeners();
+      } else {
+        _ongoingOrdersErrorMessage = 'Failed to load ongoing orders';
+        _isOngoingOrdersLoading = false;
+        notifyListeners();
+      }
+    } catch (e) {
+      _ongoingOrdersErrorMessage = 'An error occurred: ${e.toString()}';
+      _isOngoingOrdersLoading = false;
+      notifyListeners();
+    }
+  }
+  ///cancel order
+  Future<bool> cancelOrder(BuildContext context, int orderId) async {
+    await ensureCookieJarInitialized();
+
+    final url = 'http://broadway.extramindtech.com/food/cancelorder/$orderId';
+
+    try {
+      final cookieString = await getCookieString(Uri.parse(url));
+
+      final response = await _dio.put(
+        url,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieString,
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      print('Cancel Order response status: ${response.statusCode}');
+      print('Cancel Order response data: ${response.data}');
+
+      if (response.statusCode == 200 &&
+          response.data['msg'] == 'Order cancelled successfully') {
+
+
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Order cancelled successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        return true;
+      } else {
+        final errorMsg = response.data['msg'] ?? 'Failed to cancel order';
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: Colors.red,
+          ),
+        );
+
+        return false;
+      }
+    } catch (e) {
+      print('Error during order cancellation: $e');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+
+      return false;
+    }
+  }
+
+
+
 
 
 
 
   ///search
 
-  // Perform search query
+  /// Perform search query
   Future<void> searchMenuAndRestaurants(String query) async {
     try {
       if (query.isEmpty) {
@@ -1319,6 +1490,87 @@ class MainProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  ///recommended
+  Future<void> fetchRecommendedRestaurants() async {
+    try {
+      isLoadingRecommended = true;
+      notifyListeners();
+
+      final url = Uri.parse('http://broadway.extramindtech.com/food/recommended/');
+      final cookieString = await getCookieString(url);
+
+      final response = await _dio.get(
+        url.toString(),
+        options: Options(
+          headers: {
+            'Cookie': cookieString,
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // Check if response.data is a Map and contains 'Recommended Items'
+        final List<dynamic> recommendedRestaurantsJson =
+        response.data is Map
+            ? (response.data['Recommended Items'] ?? [])
+            : response.data ?? [];
+
+        recommendedRestaurants = recommendedRestaurantsJson
+            .map((json) => RestaurantModel.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('Failed to fetch recommended restaurants');
+      }
+    } catch (e) {
+      print('Error fetching recommended restaurants: $e');
+      recommendedRestaurants = [];
+    } finally {
+      isLoadingRecommended = false;
+      notifyListeners();
+    }
+  }
+  ///popular
+  Future<void> fetchMostPopularRestaurants() async {
+    try {
+      isLoadingMostPopular = true;
+      notifyListeners();
+
+      final url = Uri.parse('http://broadway.extramindtech.com/food/mostpopular/');
+      final cookieString = await getCookieString(url);
+
+      final response = await _dio.get(
+        url.toString(),
+        options: Options(
+          headers: {
+            'Cookie': cookieString,
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        // Check if response.data is a Map and contains 'Most Popular Items'
+        final List<dynamic> mostPopularRestaurantsJson =
+        response.data is Map
+            ? (response.data['Most Popular Items'] ?? [])
+            : response.data ?? [];
+
+        mostPopularRestaurants = mostPopularRestaurantsJson
+            .map((json) => RestaurantModel.fromJson(json))
+            .toList();
+      } else {
+        throw Exception('Failed to fetch most popular restaurants');
+      }
+    } catch (e) {
+      print('Error fetching most popular restaurants: $e');
+      mostPopularRestaurants = [];
+    } finally {
+      isLoadingMostPopular = false;
+      notifyListeners();
+    }
+  }
+
 
 
 
