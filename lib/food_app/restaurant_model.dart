@@ -536,7 +536,7 @@ class OrderRestaurantDetails {
   }
 }
 
-///for popular section and recommended
+///for popular section and recommended section
 class RestaurantModel {
   final int id;
   final String name;
@@ -568,6 +568,29 @@ class RestaurantModel {
       deliveryFee: json['delivery_fee'],
       location: json['location'],
       status: json['status'],
+    );
+  }
+}
+
+class Review {
+  final int id;
+  final String customerName;
+  final String review;
+  final int rating;
+
+  Review({
+    required this.id,
+    required this.customerName,
+    required this.review,
+    required this.rating,
+  });
+
+  factory Review.fromJson(Map<String, dynamic> json) {
+    return Review(
+      id: json['id'],
+      customerName: json['Customer_Name'],
+      review: json['Review'],
+      rating: json['Rating'],
     );
   }
 }

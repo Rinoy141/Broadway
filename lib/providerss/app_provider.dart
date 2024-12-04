@@ -216,6 +216,10 @@ class MainProvider extends ChangeNotifier {
   bool isLoadingRecommended = false;
   bool isLoadingMostPopular = false;
 
+  List<Review> _reviews = [];
+  List<Review> get reviews => _reviews;
+
+
 
   MainProvider() {
     _dio = Dio();
@@ -370,6 +374,41 @@ class MainProvider extends ChangeNotifier {
       print('Error during login: $e');
       _showErrorDialog(context, 'An error occurred. Please try again later.');
       return false;
+    }
+  }
+  /// reviews
+  Future<void> fetchReviews(int restaurantId) async {
+    try {
+      await ensureCookieJarInitialized();
+
+      final url = 'http://broadway.extramindtech.com/food/getreviews/$restaurantId';
+      final cookieString = await getCookieString(Uri.parse(url));
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieString,
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        // Assuming you have a Review model
+        _reviews = (response.data as List).map((json) => Review.fromJson(json)).toList();
+        _error = '';
+      } else {
+        _error = 'Failed to fetch reviews: ${response.data}';
+        _reviews = [];
+      }
+
+      notifyListeners();
+    } catch (e) {
+      _error = 'Error fetching reviews: $e';
+      _reviews = [];
+      notifyListeners();
     }
   }
 
@@ -1570,6 +1609,8 @@ class MainProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  /// reviews
+
 
 
 

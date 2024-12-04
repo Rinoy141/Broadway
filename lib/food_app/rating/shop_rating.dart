@@ -91,7 +91,7 @@ class ShopRatingPage extends StatelessWidget {
                               child: const Text('OK'),
                               onPressed: () {
                                 Navigator.of(context).pop();
-                                // Navigate back to the main page or wherever you want
+
                                 Navigator.of(context).popUntil((route) => route.isFirst);
                               },
                             ),

@@ -1,7 +1,9 @@
 import 'package:broadway/food_app/restaurant_model.dart';
 import 'package:broadway/food_app/set_quantity_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:provider/provider.dart';
+
 import '../providerss/app_provider.dart';
 
 class RestaurantDetailsPage extends StatefulWidget {
@@ -22,6 +24,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
       final provider = context.read<MainProvider>();
       provider.fetchRestaurantDetails(widget.restaurantId);
       provider.fetchRestaurantMenu(widget.restaurantId);
+      provider.fetchReviews(widget.restaurantId);
     });
   }
 
@@ -146,15 +149,28 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                 Row(
                   children: [
                     const Icon(Icons.star, color: Colors.amber, size: 20),
-                    Text(restaurant.averageRating?.toString() ?? 'N/A',style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
+                    Text(
+                      restaurant.averageRating?.toString() ?? 'N/A',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
                     const SizedBox(width: 16),
-                    const Icon(Icons.location_on,
-                        size: 16),
-                    Text('${restaurant.distance} km',style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
+                    const Icon(Icons.location_on, size: 16),
+                    Text(
+                      '${restaurant.distance} km',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
                     const SizedBox(width: 16),
-                    const Icon(Icons.delivery_dining,
-                        size: 20,),
-                     Text(' Delivery fee \₹${restaurant.deliveryFee} ',style: TextStyle(fontSize: 16,fontWeight: FontWeight.w600),),
+                    const Icon(
+                      Icons.delivery_dining,
+                      size: 20,
+                    ),
+                    Text(
+                      ' Delivery fee \₹${restaurant.deliveryFee} ',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
                   ],
                 ),
                 // Promo code section
@@ -171,7 +187,8 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.discount_outlined, color: Colors.orange),
+                          const Icon(Icons.discount_outlined,
+                              color: Colors.orange),
                           const SizedBox(width: 8),
                           Text(
                             'Save ₹${restaurant.promoCodes[0].value.toStringAsFixed(0)} with code ${restaurant.promoCodes[0].code}',
@@ -197,9 +214,15 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
       length: 2,
       child: Column(
         children: [
-          const TabBar(indicatorColor: Colors.blue,labelColor: Colors.blue,indicatorSize: TabBarIndicatorSize.tab,labelStyle: TextStyle(fontWeight: FontWeight.bold,fontSize: 15),
+          const TabBar(
+            indicatorColor: Colors.blue,
+            labelColor: Colors.blue,
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             tabs: [
-              Tab(text: 'Delivery',),
+              Tab(
+                text: 'Delivery',
+              ),
               Tab(text: 'Review'),
             ],
           ),
@@ -208,7 +231,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
             child: TabBarView(
               children: [
                 _buildDeliveryTab(context, provider),
-                _buildReviewTab(),
+                _buildReviewTab(provider),
               ],
             ),
           ),
@@ -236,7 +259,8 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
     );
   }
 
-  Widget _buildPopularItemsList(BuildContext context, List<PopularItem> popularItems) {
+  Widget _buildPopularItemsList(
+      BuildContext context, List<PopularItem> popularItems) {
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.3,
       child: ListView.builder(
@@ -245,12 +269,14 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
         itemBuilder: (context, index) {
           final item = popularItems[index];
           return InkWell(
-            onTap: () {Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CustomizationPage(popularItem: item),
-              ),
-            );},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CustomizationPage(popularItem: item),
+                ),
+              );
+            },
             child: _buildPopularItemWidget(item, context),
           );
         },
@@ -292,7 +318,8 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
     );
   }
 
-  Widget _buildFoodCategories(BuildContext context, List<FoodCategory> categories) {
+  Widget _buildFoodCategories(
+      BuildContext context, List<FoodCategory> categories) {
     return Column(
       children: categories.map((category) {
         return Column(
@@ -302,7 +329,8 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 category.name,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             ListView.builder(
@@ -313,12 +341,14 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
               itemBuilder: (context, index) {
                 final item = category.items[index];
                 return InkWell(
-                  onTap: () { Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CustomizationPage(item: item),
-                    ),
-                  );},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CustomizationPage(item: item),
+                      ),
+                    );
+                  },
                   child: _buildFoodItemWidget(item),
                 );
               },
@@ -352,7 +382,8 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
               children: [
                 Text(
                   item.name,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -362,7 +393,8 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                 const SizedBox(height: 4),
                 Text(
                   '\$${item.prices['default']?.toStringAsFixed(2) ?? 'N/A'}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -372,9 +404,84 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
     );
   }
 
-  Widget _buildReviewTab() {
-    return const Center(
-      child: Text('Reviews coming soon!'),
+  Widget _buildReviewTab(MainProvider provider) {
+    if (provider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (provider.error.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Error loading reviews', style: TextStyle(color: Colors.red)),
+            Text(provider.error, style: TextStyle(color: Colors.grey)),
+            ElevatedButton(
+              onPressed: () => provider.fetchReviews(widget.restaurantId),
+              child: Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (provider.reviews.isEmpty) {
+      return const Center(child: Text('No reviews yet'));
+    }
+
+    return ListView.builder(
+      itemCount: provider.reviews.length,
+      itemBuilder: (context, index) {
+        final review = provider.reviews[index];
+        return Padding(
+          padding: const EdgeInsets.only(left: 16,right: 16,bottom: 16),
+          child: Column(
+
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundImage:
+                        AssetImage('Assets/images/Ellipse 1 (4).png'),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(review.customerName,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      RatingBar.builder(
+                        initialRating: review.rating.toDouble(),
+                        minRating: 1,
+                        direction: Axis.horizontal,
+                        allowHalfRating: true,
+                        itemCount: 5,
+                        itemSize: 20,
+                        itemBuilder: (context, _) => const Icon(
+                          Icons.star,
+                          color: Colors.amber,
+                        ),
+                        onRatingUpdate: (_) {},
+                      ),],
+                  ),
+                 ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      review.review,
+
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
