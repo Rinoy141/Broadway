@@ -1,8 +1,9 @@
+import 'package:broadway/food_app/rating/shop_rating.dart';
 import 'package:broadway/food_app/restaurant_model.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:broadway/food_app/rating/driver_rating.dart';
+
 
 
 import '../providerss/app_provider.dart'; // Adjust import as needed
@@ -18,7 +19,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   @override
   void initState() {
     super.initState();
-    // Fetch order history when the page is first loaded
+
     final provider = Provider.of<MainProvider>(context, listen: false);
     provider.fetchOrderHistory();
     provider.fetchOngoingOrders();
@@ -57,7 +58,6 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               Expanded(
                 child: TabBarView(
                   children: [
-                    // Ongoing orders tab
                     // Ongoing orders tab
                     Consumer<MainProvider>(
                       builder: (context, provider, child) {
@@ -150,15 +150,15 @@ class OrderListItem extends StatelessWidget {
           children: [
             Row(
               children: [
-                Text(order.itemName, style: const TextStyle(color: Colors.grey)),
-                const SizedBox(width: 20),
+                Text(order.itemName, style: const TextStyle(color: Colors.grey,fontSize: 12)),
+                 SizedBox(width: 10),
                 Text(order.status,
                     style: TextStyle(
-                        color: _getStatusColor(order.status))),
+                        color: _getStatusColor(order.status),fontSize: 12)),
                 const Spacer(),
                 Text(
                   DateFormat('yyyy-MM-dd').format(order.dateTime),
-                  style: const TextStyle(color: Colors.grey),
+                  style: const TextStyle(color: Colors.grey,fontSize: 12),
                 ),
               ],
             ),
@@ -205,7 +205,7 @@ class OrderListItem extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
                 onPressed: () {
-                  // TODO  order cancellation
+
                   final provider = Provider.of<MainProvider>(context, listen: false);
                   provider.cancelOrder(context, order.id);
                 },
@@ -220,11 +220,12 @@ class OrderListItem extends StatelessWidget {
                       color: Colors.grey[200],
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
+
                       onPressed: () {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const DriverRatingPage(),
+                              builder: (context) => ShopRatingPage(restaurantId: order.restaurantDetails.id,),
                             ));
                       },
                       child: const Text('Rate'),

@@ -60,12 +60,7 @@ class _NearbyRestaurantsWidgetState extends State<NearbyRestaurantsWidget> {
                         'Nearby Restaurants',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
                     ),
-                    TextButton(
-                        onPressed: () {
-                          // Navigation logic if needed
-                        },
-                        child: const Text('See all')
-                    ),
+
                   ],
                 ),
                 const SizedBox(height: 8),

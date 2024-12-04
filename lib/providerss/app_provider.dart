@@ -376,41 +376,9 @@ class MainProvider extends ChangeNotifier {
       return false;
     }
   }
-  /// reviews
-  Future<void> fetchReviews(int restaurantId) async {
-    try {
-      await ensureCookieJarInitialized();
 
-      final url = 'http://broadway.extramindtech.com/food/getreviews/$restaurantId';
-      final cookieString = await getCookieString(Uri.parse(url));
 
-      final response = await _dio.get(
-        url,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-          },
-          validateStatus: (status) => true,
-        ),
-      );
 
-      if (response.statusCode == 200 && response.data != null) {
-        // Assuming you have a Review model
-        _reviews = (response.data as List).map((json) => Review.fromJson(json)).toList();
-        _error = '';
-      } else {
-        _error = 'Failed to fetch reviews: ${response.data}';
-        _reviews = [];
-      }
-
-      notifyListeners();
-    } catch (e) {
-      _error = 'Error fetching reviews: $e';
-      _reviews = [];
-      notifyListeners();
-    }
-  }
 
   /// Main login handler with navigation logic
   Future<void> handleLogin(BuildContext context) async {
@@ -1163,13 +1131,6 @@ class MainProvider extends ChangeNotifier {
   }
 
 
-
-
-
-
-
-  ///search
-
   /// Perform search query
   Future<void> searchMenuAndRestaurants(String query) async {
     try {
@@ -1298,6 +1259,41 @@ class MainProvider extends ChangeNotifier {
     }
   }
 
+  /// reviews
+  Future<void> fetchReviews(int restaurantId) async {
+    try {
+      await ensureCookieJarInitialized();
+
+      final url = 'http://broadway.extramindtech.com/food/getreviews/$restaurantId';
+      final cookieString = await getCookieString(Uri.parse(url));
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieString,
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+
+        _reviews = (response.data as List).map((json) => Review.fromJson(json)).toList();
+        _error = '';
+      } else {
+        _error = 'Failed to fetch reviews: ${response.data}';
+        _reviews = [];
+      }
+
+      notifyListeners();
+    } catch (e) {
+      _error = 'Error fetching reviews: $e';
+      _reviews = [];
+      notifyListeners();
+    }
+  }
   ///fetch restaurants with id
   Future<void> fetchRestaurantDetails(int restaurantId) async {
     try {
@@ -1336,9 +1332,61 @@ class MainProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  ///add review
+  Future<bool> addRestaurantReview({
+    required BuildContext context,
+    required int restaurantId,
+    required int rating,
+    String review = ''
+  })
+  async {
+    try {
+      await ensureCookieJarInitialized();
+
+      final url = 'http://broadway.extramindtech.com/food/addreviews/$restaurantId';
+      final cookieString = await getCookieString(Uri.parse(url));
+
+      final response = await _dio.post(
+        url,
+        data: {
+          "Review": review.isNotEmpty ? review : 'Rating submitted',
+          "Rating": rating
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieString,
+          },
+          validateStatus: (status) => true,
+        ),
+      );
+
+      print('Add Review Response: ${response.data}');
+      print('Add Review Status Code: ${response.statusCode}');
+
+      if (response.statusCode == 200 &&
+          response.data['msg'] == 'Review submitted successfully') {
+
+        await fetchReviews(restaurantId);
+
+        return true;
+      } else {
+
+        final errorMsg = response.data['msg'] ?? 'Failed to submit review';
+        _showErrorDialog(context, errorMsg);
+        return false;
+      }
+    } catch (e) {
+      print('Error adding restaurant review: $e');
+      _showErrorDialog(context, 'An error occurred while submitting review');
+      return false;
+    }
+  }
+
+
 
   /// Fetch Restaurants
-//  have a Restaurant model class
+
   Future<List<Restaurant>> fetchRestaurants(BuildContext context) async {
     try {
       await ensureCookieJarInitialized();

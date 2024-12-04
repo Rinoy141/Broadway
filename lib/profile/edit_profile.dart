@@ -19,21 +19,21 @@ class EditProfilePageState extends State<EditProfilePage> {
   void initState() {
     super.initState();
 
-    // Initialize controllers
+
     addressController = TextEditingController();
     countryController = TextEditingController();
     districtController = TextEditingController();
     placeController = TextEditingController();
     genderController = TextEditingController();
 
-    // Optionally, you could populate controllers with initial data if needed
+
     final provider = Provider.of<MainProvider>(context, listen: false);
-    addressController.text = provider.emailController.text; // Example binding
+    addressController.text = provider.emailController.text;
   }
 
   @override
   void dispose() {
-    // Dispose controllers to avoid memory leaks
+
     addressController.dispose();
     countryController.dispose();
     districtController.dispose();

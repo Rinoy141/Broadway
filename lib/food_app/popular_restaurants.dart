@@ -58,12 +58,7 @@ class _MostPopularRestaurantsWidgetState extends State<MostPopularRestaurantsWid
                         'Most Popular Restaurants',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
                     ),
-                    TextButton(
-                        onPressed: () {
-                          // Navigation logic if needed
-                        },
-                        child: const Text('See all')
-                    ),
+
                   ],
                 ),
                 const SizedBox(height: 8),

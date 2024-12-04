@@ -112,26 +112,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const Expanded(child: SizedBox()),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.orange[100],
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        'Take Away',
-                        style: TextStyle(color: Colors.orange[800]),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.favorite,
-                        color: Colors.orange,
-                      ),
-                    ),
+
                   ],
                 ),
                 const SizedBox(height: 8),
