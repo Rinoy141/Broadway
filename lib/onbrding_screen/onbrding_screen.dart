@@ -34,7 +34,7 @@ class OnboardingScreen extends StatelessWidget {
                       ],
                       borderRadius: BorderRadius.circular(20),
                       color: Colors.white),
-                  height: MediaQuery.of(context).size.height * 0.75,
+                  height: MediaQuery.of(context).size.height * 0.65,
                   width: MediaQuery.of(context).size.width * 0.9,
                   child: PageView.builder(
                     onPageChanged: (value) {
@@ -48,7 +48,7 @@ class OnboardingScreen extends StatelessWidget {
                       return Column(
                         children: [
                           SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.4,
+                            height: MediaQuery.of(context).size.height * 0.3,
                             child: Image(
                               image: AssetImage(onbrdingModelList[index].img),
                             ),
@@ -61,7 +61,7 @@ class OnboardingScreen extends StatelessWidget {
                               style: const TextStyle(fontSize: 18)),
                           if (onbrdingModelList[index].buttonText != null)
                             Padding(
-                              padding: const EdgeInsets.only(top: 70),
+                              padding: const EdgeInsets.only(top: 40),
                               child: MaterialButton(
                                 color: const Color(0xff004CFF),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -87,8 +87,8 @@ class OnboardingScreen extends StatelessWidget {
                     },
                   ),
                 ),
-                const SizedBox(
-                  height: 30,
+                 SizedBox(
+                  height: 20,
                 ),
                 SmoothPageIndicator(
                     controller: pageController,

@@ -135,9 +135,7 @@ class BestSeller {
     return BestSeller(
       id: json['id'] ?? 0,
       restaurantName: json['restaurant_name'] ?? '',
-      image: json['image'] != null
-          ? 'http://broadway.extramindtech.com${json['image']}'
-          : '',
+      image: 'https://broadway.icgedu.com${json['image']}',
       district: json['district'] ?? '',
       rating: (json['rating'] ?? 0).toDouble(),
       distance: json['distance'] ?? 0,
@@ -283,7 +281,7 @@ class NearbyRestaurant {
   factory NearbyRestaurant.fromJson(Map<String, dynamic> json) {
     return NearbyRestaurant(
       id: json['id']??'',
-      image: json['image'] ?? '',
+      image: 'https://broadway.icgedu.com${json['image']}',
       name: json['restaurant'] ?? '',
       location: json['address'] ?? '',
       distance: (json['distance_km'] is num)
@@ -311,7 +309,7 @@ class Category {
 
   factory Category.fromJson(Map<String, dynamic> json) {
     print('Parsing category from JSON: $json'); // Debug print
-    const baseUrl = 'http://broadway.extramindtech.com';
+    const baseUrl = 'https://broadway.icgedu.com';
     String imageUrl = json['Image'] ?? '';
     if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
       imageUrl = '$baseUrl$imageUrl';

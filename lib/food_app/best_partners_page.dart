@@ -79,7 +79,7 @@ class BestPartnersPage extends StatelessWidget {
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
                                       return Image.asset(
-                                        'assets/placeholder.png',
+                                        'Assets/images/Grocery Store.png',
                                         height: MediaQuery.of(context).size.height * 0.15,
                                         width: MediaQuery.of(context).size.width * 0.1,
                                         fit: BoxFit.cover,

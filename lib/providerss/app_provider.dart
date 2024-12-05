@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:broadway/food_app/food_delivery_homepage.dart';
+
 import 'package:broadway/login/app_selection.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
+
 import 'package:path_provider/path_provider.dart';
 import '../login/change_password.dart';
 import '../food_app/restaurant_model.dart';
@@ -232,7 +232,7 @@ class MainProvider extends ChangeNotifier {
       final directory = await getApplicationDocumentsDirectory();
       final cookiesDir = '${directory.path}/cookies';
 
-      // Ensure the cookies directory exists
+
       final dir = Directory(cookiesDir);
       if (!await dir.exists()) {
         await dir.create(recursive: true);
@@ -240,13 +240,13 @@ class MainProvider extends ChangeNotifier {
 
       print('Initializing cookie jar at path: $cookiesDir');
       _cookieJar = PersistCookieJar(
-          ignoreExpires: true, // Prevent cookie expiration
+          ignoreExpires: true,
           storage: FileStorage(cookiesDir));
       _dio.interceptors.add(CookieManager(_cookieJar!));
 
-      // Verify the cookie jar was initialized
+
       final cookies = await _cookieJar
-          ?.loadForRequest(Uri.parse('http://broadway.extramindtech.com'));
+          ?.loadForRequest(Uri.parse('https://broadway.icgedu.com'));
       print('Existing cookies after initialization: $cookies');
     } catch (e) {
       print('Error initializing cookie jar: $e');
@@ -324,14 +324,14 @@ class MainProvider extends ChangeNotifier {
     await ensureCookieJarInitialized();
     print('Login process started');
 
-    const url = 'http://broadway.extramindtech.com/user/login/';
+    const url = 'https://broadway.icgedu.com/user/login/';
     final body = {
       'Email': emailController.text,
       'Password': passwordController.text,
     };
 
     try {
-      // Log the existing cookies before login
+
       final preCookies = await getCookieString(Uri.parse(url));
       print('Cookies before login: $preCookies');
 
@@ -344,7 +344,7 @@ class MainProvider extends ChangeNotifier {
             'Cookie': preCookies,
           },
           validateStatus: (status) =>
-              true, // Allow all status codes for debugging
+              true,
         ),
       );
 
@@ -445,7 +445,7 @@ class MainProvider extends ChangeNotifier {
       return false;
     }
 
-    const url = 'http://broadway.extramindtech.com/user/changepassword/';
+    const url = 'https://broadway.icgedu.com/user/changepassword/';
     final body = {
       'Password': newPasswordController.text,
     };
@@ -518,7 +518,7 @@ class MainProvider extends ChangeNotifier {
   }) async
   {await ensureCookieJarInitialized();
 
-  const url = 'http://broadway.extramindtech.com/user/addaddress/';
+  const url = 'https://broadway.icgedu.com/user/addaddress/';
   final body = {
     'Country': country,
     'Address': address,
@@ -571,9 +571,9 @@ class MainProvider extends ChangeNotifier {
     await ensureCookieJarInitialized();
 
     try {
-      const url = 'http://broadway.extramindtech.com/user/profile_view/';
+      const url = 'https://broadway.icgedu.com/user/profile_view/';
 
-      // Log cookies before making the request
+
       final cookieString = await getCookieString(Uri.parse(url));
       print('Cookies before profile check: $cookieString');
 
@@ -585,7 +585,7 @@ class MainProvider extends ChangeNotifier {
             'Cookie': cookieString,
           },
           validateStatus: (status) =>
-          true, // Allow all status codes for debugging
+          true,
         ),
       );
 
@@ -620,7 +620,7 @@ class MainProvider extends ChangeNotifier {
     try {
       await ensureCookieJarInitialized();
 
-      const url = 'http://broadway.extramindtech.com/user/profile_view/';
+      const url = 'https://broadway.icgedu.com/user/profile_view/';
       final cookieString = await getCookieString(Uri.parse(url));
 
       final response = await _dio.get(
@@ -683,12 +683,12 @@ class MainProvider extends ChangeNotifier {
       if (!context.mounted) return;
 
       if (success) {
-        // Show success message
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Profile updated successfully')),
         );
 
-        // Navigate to BestPartnersPage
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => AppSelection()),
@@ -715,7 +715,7 @@ class MainProvider extends ChangeNotifier {
       notifyListeners();
 
       final url =
-          Uri.parse('http://broadway.extramindtech.com/food/addcart/$itemId');
+          Uri.parse('https://broadway.icgedu.com/food/addcart/$itemId');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.post(
@@ -757,7 +757,7 @@ class MainProvider extends ChangeNotifier {
       _error = '';
       notifyListeners();
 
-      final url = 'http://broadway.extramindtech.com/food/viewcart/';
+      final url = 'https://broadway.icgedu.com/food/viewcart/';
       final cookieString = await getCookieString(Uri.parse(url));
 
       final response = await _dio.get(
@@ -799,7 +799,7 @@ class MainProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final url = 'http://broadway.extramindtech.com/food/deletecart/$cartItemId';
+      final url = 'https://broadway.icgedu.com/food/deletecart/$cartItemId';
       final cookieString = await getCookieString(Uri.parse(url));
 
       final response = await _dio.delete(
@@ -813,10 +813,10 @@ class MainProvider extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        // Remove the item from the list
+
         _cartItems.removeWhere((item) => item.id == cartItemId);
 
-        // Recalculate total price
+
         _totalPrice = _cartItems.fold(0.0, (total, item) => total + (item.price * item.quantity));
 
         notifyListeners();
@@ -833,7 +833,7 @@ class MainProvider extends ChangeNotifier {
   }
   Future<void> updateCartItemQuantity(int cartItemId, int newQuantity) async {
     try {
-      final url = 'http://broadway.extramindtech.com/food/cartupdate/$cartItemId';
+      final url = 'https://broadway.icgedu.com/food/cartupdate/$cartItemId';
       final cookieString = await getCookieString(Uri.parse(url));
 
       final response = await _dio.put(
@@ -885,7 +885,7 @@ class MainProvider extends ChangeNotifier {
   Future<void> applyPromoCode(BuildContext context, String code) async {
     await ensureCookieJarInitialized();
 
-    const url = 'http://broadway.extramindtech.com/food/promocode/';
+    const url = 'https://broadway.icgedu.com/food/promocode/';
     final body = {'Code': code};
 
     try {
@@ -898,7 +898,7 @@ class MainProvider extends ChangeNotifier {
             'Content-Type': 'application/json',
             'Cookie': cookieString,
           },
-          validateStatus: (status) => true, // Accept all responses for debugging
+          validateStatus: (status) => true,
         ),
       );
 
@@ -929,7 +929,7 @@ class MainProvider extends ChangeNotifier {
     try {
       await ensureCookieJarInitialized();
 
-      const url = 'http://broadway.extramindtech.com/food/addorders/';
+      const url = 'https://broadway.icgedu.com/food/addorders/';
       final cookieString = await getCookieString(Uri.parse(url));
 
       final response = await _dio.post(
@@ -984,7 +984,7 @@ class MainProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      const url = 'http://broadway.extramindtech.com/food/orderhistory/';
+      const url = 'https://broadway.icgedu.com/food/orderhistory/';
       final cookieString = await getCookieString(Uri.parse(url));
 
       final response = await _dio.get(
@@ -1024,7 +1024,7 @@ class MainProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      const url = 'http://broadway.extramindtech.com/food/ongoingorders/';
+      const url = 'https://broadway.icgedu.com/food/ongoingorders/';
       final cookieString = await getCookieString(Uri.parse(url));
 
       final response = await _dio.get(
@@ -1071,7 +1071,7 @@ class MainProvider extends ChangeNotifier {
   Future<bool> cancelOrder(BuildContext context, int orderId) async {
     await ensureCookieJarInitialized();
 
-    final url = 'http://broadway.extramindtech.com/food/cancelorder/$orderId';
+    final url = 'https://broadway.icgedu.com/food/cancelorder/$orderId';
 
     try {
       final cookieString = await getCookieString(Uri.parse(url));
@@ -1095,7 +1095,7 @@ class MainProvider extends ChangeNotifier {
 
 
 
-        // Show success message
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Order cancelled successfully'),
@@ -1135,7 +1135,7 @@ class MainProvider extends ChangeNotifier {
   Future<void> searchMenuAndRestaurants(String query) async {
     try {
       if (query.isEmpty) {
-        currentSearchResults = []; // Clear results for empty query
+        currentSearchResults = [];
         menuResults = [];
         restaurantResults = [];
         notifyListeners();
@@ -1144,11 +1144,11 @@ class MainProvider extends ChangeNotifier {
 
       final searchResults = await fetchSearchResults(query);
 
-      // Separate menu items and restaurants
+
       menuResults = searchResults['menu_items'] ?? [];
       restaurantResults = searchResults['restaurants'] ?? [];
 
-      // Combine for overall search results display
+
       currentSearchResults = [...menuResults, ...restaurantResults];
 
       notifyListeners();
@@ -1160,7 +1160,7 @@ class MainProvider extends ChangeNotifier {
 
   Future<Map<String, dynamic>> fetchSearchResults(String query) async {
     const String baseUrl =
-        'http://broadway.extramindtech.com/food/getbysearch/';
+        'https://broadway.icgedu.com/food/getbysearch/';
 
     try {
       final url = Uri.parse(baseUrl);
@@ -1205,7 +1205,7 @@ class MainProvider extends ChangeNotifier {
 
       await ensureCookieJarInitialized();
       final url =
-          Uri.parse('http://broadway.extramindtech.com/food/categories/');
+          Uri.parse('https://broadway.icgedu.com/food/categories/');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.get(
@@ -1244,7 +1244,7 @@ class MainProvider extends ChangeNotifier {
   Future<List<MenuItem>> getMenuItemsByCategory(int categoryId) async {
     try {
       final response = await _dio.get(
-        'http://broadway.extramindtech.com/food/categories/$categoryId',
+        'https://broadway.icgedu.com/food/categories/$categoryId',
       );
 
       if (response.statusCode == 200) {
@@ -1264,7 +1264,7 @@ class MainProvider extends ChangeNotifier {
     try {
       await ensureCookieJarInitialized();
 
-      final url = 'http://broadway.extramindtech.com/food/getreviews/$restaurantId';
+      final url = 'https://broadway.icgedu.com/food/getreviews/$restaurantId';
       final cookieString = await getCookieString(Uri.parse(url));
 
       final response = await _dio.get(
@@ -1301,7 +1301,7 @@ class MainProvider extends ChangeNotifier {
       notifyListeners();
 
       final url = Uri.parse(
-          'http://broadway.extramindtech.com/food/restaurants/$restaurantId');
+          'https://broadway.icgedu.com/food/restaurants/$restaurantId');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.get(
@@ -1343,7 +1343,7 @@ class MainProvider extends ChangeNotifier {
     try {
       await ensureCookieJarInitialized();
 
-      final url = 'http://broadway.extramindtech.com/food/addreviews/$restaurantId';
+      final url = 'https://broadway.icgedu.com/food/addreviews/$restaurantId';
       final cookieString = await getCookieString(Uri.parse(url));
 
       final response = await _dio.post(
@@ -1392,7 +1392,7 @@ class MainProvider extends ChangeNotifier {
       await ensureCookieJarInitialized();
 
       final url =
-          Uri.parse('http://broadway.extramindtech.com/food/restaurants/');
+          Uri.parse('https://broadway.icgedu.com/food/restaurants/');
       final cookieString = await getCookieString(url);
 
       print('Fetching restaurants...');
@@ -1432,7 +1432,7 @@ class MainProvider extends ChangeNotifier {
       await ensureCookieJarInitialized();
 
       final url =
-          Uri.parse('http://broadway.extramindtech.com/food/bestsellers/');
+          Uri.parse('https://broadway.icgedu.com/food/bestsellers/');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.get(
@@ -1468,7 +1468,7 @@ class MainProvider extends ChangeNotifier {
       notifyListeners();
 
       final url = Uri.parse(
-          'http://broadway.extramindtech.com/food/restaurantmenu/$restaurantId');
+          'https://broadway.icgedu.com/food/restaurantmenu/$restaurantId');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.get(
@@ -1510,7 +1510,7 @@ class MainProvider extends ChangeNotifier {
       await ensureCookieJarInitialized();
 
       final url =
-          Uri.parse('http://broadway.extramindtech.com/food/getbyprice/');
+          Uri.parse('https://broadway.icgedu.com/food/getbyprice/');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.post(
@@ -1546,7 +1546,7 @@ class MainProvider extends ChangeNotifier {
       notifyListeners();
 
       final url =
-          Uri.parse('http://broadway.extramindtech.com/food/nearbysearch/');
+          Uri.parse('https://broadway.icgedu.com/food/nearbysearch/');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.get(
@@ -1583,7 +1583,7 @@ class MainProvider extends ChangeNotifier {
       isLoadingRecommended = true;
       notifyListeners();
 
-      final url = Uri.parse('http://broadway.extramindtech.com/food/recommended/');
+      final url = Uri.parse('https://broadway.icgedu.com/food/recommended/');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.get(
@@ -1623,7 +1623,7 @@ class MainProvider extends ChangeNotifier {
       isLoadingMostPopular = true;
       notifyListeners();
 
-      final url = Uri.parse('http://broadway.extramindtech.com/food/mostpopular/');
+      final url = Uri.parse('https://broadway.icgedu.com/food/mostpopular/');
       final cookieString = await getCookieString(url);
 
       final response = await _dio.get(
@@ -1715,7 +1715,7 @@ class ForgotPasswordProvider extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    final url = Uri.parse('http://broadway.extramindtech.com/user/sendotpemail/');
+    final url = Uri.parse('https://broadway.icgedu.com/user/sendotpemail/');
     final body = {
       'Email': emailController.text,
     };
@@ -1777,7 +1777,7 @@ class ForgotPasswordProvider extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    final url = Uri.parse('http://broadway.extramindtech.com/user/verifyotp/');
+    final url = Uri.parse('https://broadway.icgedu.com/user/verifyotp/');
     final body = {
       'Otp': otpController.text,
     };

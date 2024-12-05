@@ -99,13 +99,13 @@ class _RecommendedRestaurantsWidgetState extends State<RecommendedRestaurantsWid
                                       borderRadius: BorderRadius.circular(8),
                                       child: restaurant.image.isNotEmpty
                                           ? Image.network(
-                                        'http://broadway.extramindtech.com${restaurant.image}',
+                                        'https://broadway.icgedu.com${restaurant.image}',
                                         height: 120,
                                         width: double.infinity,
                                         fit: BoxFit.cover,
                                         errorBuilder: (context, error, stackTrace) {
                                           return Image.asset(
-                                            'assets/placeholder.png',
+                                            'Assets/images/Grocery Store.png',
                                             height: 120,
                                             width: double.infinity,
                                             fit: BoxFit.cover,
