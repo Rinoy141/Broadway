@@ -2,7 +2,7 @@
 import 'package:broadway/login/loginpage.dart';
 import 'package:broadway/onbrding_screen/onbrding_provider.dart';
 import 'package:broadway/onbrding_screen/onbrding_screen.dart';
-import 'package:broadway/profile/edit_profile.dart';
+import 'package:broadway/profile/set_profile.dart';
 import 'package:broadway/providerss/app_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +13,6 @@ void main() {
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (context) => OnboardingState()),
-      ChangeNotifierProvider(create: (context) => RatingProvider()),
       ChangeNotifierProvider(create: (context) => NotificationSettings()),
       ChangeNotifierProvider(create: (_) => MainProvider()..loadOnboardingState()),
 

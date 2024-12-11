@@ -1,7 +1,7 @@
 // import 'package:broadway/profile/notficiation.dart';
 // import 'package:flutter/material.dart';
 //
-// import 'edit_profile.dart';
+// import 'set_profile.dart';
 //
 // class ProfileScreen extends StatelessWidget {
 //   @override

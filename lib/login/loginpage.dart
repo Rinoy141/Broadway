@@ -99,7 +99,7 @@ class LoginPage extends StatelessWidget {
                             onPressed: loginProvider.isLoading ? null : () {
                               loginProvider.handleLogin(context);
                             },
-                            child: Center( // Ensure content is centered
+                            child: Center(
                               child: loginProvider.isLoading
                                   ? const CircularProgressIndicator(
                                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xffF3F3F3)),

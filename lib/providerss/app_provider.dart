@@ -12,7 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import '../login/change_password.dart';
 import '../food_app/restaurant_model.dart';
 import '../login/loginpage.dart';
-import '../profile/edit_profile.dart';
+import '../profile/set_profile.dart';
 
 // NotificationSettings model
 class NotificationSettings extends ChangeNotifier {
@@ -63,7 +63,7 @@ class RegistrationProvider with ChangeNotifier {
       print("Sending registration request: $requestBody");
 
       final response = await http.post(
-        Uri.parse('http://broadway.extramindtech.com/user/createuser/'),
+        Uri.parse('https://broadway.icgedu.com/user/createuser/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
       );
@@ -97,12 +97,12 @@ class RegistrationProvider with ChangeNotifier {
   }
 
   Future<void> navigateToLogin(BuildContext context) async {
-    // Ensure we're not in a loading state before navigation
+
     setLoading(false);
 
     if (!context.mounted) return;
 
-    // Navigate immediately without delay
+
     await Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
@@ -413,7 +413,7 @@ class MainProvider extends ChangeNotifier {
           print('Profile not set, navigating to EditProfilePage');
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => EditProfilePage()),
+            MaterialPageRoute(builder: (context) => SetProfilePage()),
           );
         }
       }
@@ -507,63 +507,88 @@ class MainProvider extends ChangeNotifier {
     }
   }
 
-  /// Add or Update User Address
+  /// Add  User Address
 
   Future<bool> addOrUpdateAddress({
-    required String country,
-    required String address,
-    required String district,
-    required String place,
-    required String gender,
+     String? country,
+     String? address,
+     String? district,
+     String? place,
+     String? gender,
+    File? profilePic,
+    File? idImage,
   }) async
-  {await ensureCookieJarInitialized();
+  {
+    await ensureCookieJarInitialized();
+    const url = 'https://broadway.icgedu.com/user/addaddress/';
 
-  const url = 'https://broadway.icgedu.com/user/addaddress/';
-  final body = {
-    'Country': country,
-    'Address': address,
-    'District': district,
-    'Place': place,
-    'Gender': gender,
-  };
 
-  print('Request Body for Add/Update Address: $body');
+    var formData = FormData.fromMap({
+      'Country': country,
+      'Address': address,
+      'District': district,
+      'Place': place,
+      'Gender': gender,
 
-  try {
-    final cookieString = await getCookieString(Uri.parse(url));
-    print('Cookies for address update: $cookieString');
+    });
 
-    final response = await _dio.post(
-      url,
-      data: jsonEncode(body),
-      options: Options(
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': cookieString,
-        },
-      ),
-    );
 
-    print('Add/Update Address response status: ${response.statusCode}');
-    print('Add/Update Address response data: ${response.data}');
+    if (profilePic != null) {
+      formData.files.add(
+          MapEntry(
+              'Profile_pic',
+              await MultipartFile.fromFile(profilePic.path, filename: 'profile_pic.jpg')
+          )
+      );
+    }
 
-    if (response.statusCode == 200 &&
-        (response.data['msg'] == 'Data saved Successfully' ||
-            response.data['msg']
-                ?.toString()
-                .toLowerCase()
-                .contains('success') ==
-                true)) {
-      print('Successfully added/updated address: ${response.data['msg']}');
-      return true;
-    } else {
-      print('Failed to add/update address: ${response.data['msg']}');
+
+    if (idImage != null) {
+      formData.files.add(
+          MapEntry(
+              'Id_Image',
+              await MultipartFile.fromFile(idImage.path, filename: 'id_image.jpg')
+          )
+      );
+    }
+
+    print('Request Body for Add/Update Address: ${formData.fields}');
+
+    try {
+      final cookieString = await getCookieString(Uri.parse(url));
+      print('Cookies for address update: $cookieString');
+
+      final response = await _dio.post(
+        url,
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Cookie': cookieString,
+          },
+        ),
+      );
+
+      print('Add/Update Address response status: ${response.statusCode}');
+      print('Add/Update Address response data: ${response.data}');
+
+      if (response.statusCode == 200 &&
+          (response.data['msg'] == 'Data saved Successfully' ||
+              response.data['msg']
+                  ?.toString()
+                  .toLowerCase()
+                  .contains('success') ==
+                  true)) {
+        print('Successfully added/updated address: ${response.data['msg']}');
+        return true;
+      } else {
+        print('Failed to add/update address: ${response.data['msg']}');
+        return false;
+      }
+    } catch (e) {
+      print('Error during add/update address: $e');
       return false;
     }
-  } catch (e) {
-    print('Error during add/update address: $e');
-    return false;
-  }
   }
 
   /// Check if user profile is set
@@ -654,6 +679,94 @@ class MainProvider extends ChangeNotifier {
       return null;
     }
   }
+///update profile
+  Future<bool> updateUserProfile({
+
+
+
+    String? country,
+    String? address,
+    String? district,
+    String? place,
+    String? gender,
+    File? profilePic,
+    File? idImage,
+  }) async {
+    await ensureCookieJarInitialized();
+    const url = 'http://broadway.icgedu.com/user/update_user_data/';
+
+    try {
+      // Create form data
+      var formData = FormData.fromMap({
+
+        if (country != null) 'Country': country,
+        if (address != null) 'Address': address,
+        if (district != null) 'District': district,
+        if (place != null) 'Place': place,
+        if (gender != null) 'Gender': gender,
+      });
+
+      // Add profile picture if provided
+      if (profilePic != null) {
+        formData.files.add(
+            MapEntry(
+                'Profile_pic',
+                await MultipartFile.fromFile(profilePic.path, filename: 'profile_pic.jpg')
+            )
+        );
+      }
+
+      // Add ID image if provided
+      if (idImage != null) {
+        formData.files.add(
+            MapEntry(
+                'Id_Image',
+                await MultipartFile.fromFile(idImage.path, filename: 'id_image.jpg')
+            )
+        );
+      }
+
+      // Print request details for debugging
+      print('Update User Data Request Body: ${formData.fields}');
+
+      // Get cookie string for authentication
+      final cookieString = await getCookieString(Uri.parse(url));
+      print('Cookies for user data update: $cookieString');
+
+      // Send POST request
+      final response = await _dio.put(
+        url,
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Cookie': cookieString,
+          },
+        ),
+      );
+
+      // Print response for debugging
+      print('Update User Data response status: ${response.statusCode}');
+      print('Update User Data response data: ${response.data}');
+
+      // Check for successful response
+      if (response.statusCode == 200 &&
+          (response.data['msg']?.toString().toLowerCase().contains('success') == true)) {
+        print('Successfully updated user data: ${response.data['msg']}');
+
+        // Fetch updated profile
+        await fetchUserProfile();
+
+        return true;
+      } else {
+        print('Failed to update user data: ${response.data['msg']}');
+        return false;
+      }
+    } catch (e) {
+      print('Error during user data update: $e');
+      return false;
+    }
+  }
 
 
   /// Handle profile update and navigation
@@ -664,6 +777,8 @@ class MainProvider extends ChangeNotifier {
     required String district,
     required String place,
     required String gender,
+    File? profilePic,
+    File? idImage,
   }) async
   {
     if (!context.mounted) return;
@@ -672,35 +787,35 @@ class MainProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final success = await addOrUpdateAddress(
-        country: country,
-        address: address,
-        district: district,
-        place: place,
-        gender: gender,
-      );
+    final success = await addOrUpdateAddress(
+    country: country,
+    address: address,
+    district: district,
+    place: place,
+    gender: gender,
+    profilePic: profilePic,
+    idImage: idImage,
+    );
 
-      if (!context.mounted) return;
+    if (!context.mounted) return;
 
-      if (success) {
+    if (success) {
+    ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Profile updated successfully')),
+    );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
-        );
-
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => AppSelection()),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to update profile')),
-        );
-      }
+    Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => AppSelection()),
+    );
+    } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Failed to update profile')),
+    );
+    }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+    _isLoading = false;
+    notifyListeners();
     }
   }
 

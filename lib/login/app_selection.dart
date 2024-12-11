@@ -1,4 +1,5 @@
 import 'package:broadway/food_app/food_delivery_homepage.dart';
+import 'package:broadway/food_app/main_page.dart';
 import 'package:flutter/material.dart';
 
 class AppSelection extends StatelessWidget {
@@ -40,7 +41,7 @@ class AppSelection extends StatelessWidget {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const FoodDeliveryHomePage(),
+                            builder: (context) => const MainPage(),
                           ));
 
                     },context

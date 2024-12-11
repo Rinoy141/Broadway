@@ -7,7 +7,8 @@ import 'package:broadway/food_app/order_history%20page.dart';
 import 'package:broadway/food_app/popular_restaurants.dart';
 import 'package:broadway/food_app/recommended_restaurants.dart';
 import 'package:broadway/food_app/restaurant_model.dart';
-import 'package:broadway/profile/edit_profile.dart';
+import 'package:broadway/profile/set_profile.dart';
+import 'package:broadway/profile/view_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providerss/app_provider.dart';
@@ -22,35 +23,32 @@ class FoodDeliveryHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AppBarState(),
-      child: Scaffold(
-        body: Stack(children: [
-          _buildBackgroundDesign(),
-          SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                       children: [CustomAppBarContent(),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                              top: 10, left: 10, right: 10),
-                          child: _buildCategorySection(),
-                        ),
-                         _buildBestPartnersSection(context ,MainProvider()),
+    return Scaffold(
+      body: Stack(children: [
+        _buildBackgroundDesign(),
+        SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                     children: [CustomAppBarContent(),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            top: 10, left: 10, right: 10),
+                        child: _buildCategorySection(),
+                      ),
+                       _buildBestPartnersSection(context ,MainProvider()),
 
-                        _buildTabSection(context),
-                      ],
-                    ),
+                      _buildTabSection(context),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ]),
-      ),
+        ),
+      ]),
     );
   }
 
@@ -84,7 +82,7 @@ class FoodDeliveryHomePage extends StatelessWidget {
   Widget _buildCategorySection() {
     return Consumer<MainProvider>(
       builder: (context, provider, child) {
-        // Ensure fetchCategories() is only called once after the first build
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (provider.categories.isEmpty && !provider.isLoadingCategories) {
             provider.fetchCategories();
@@ -106,15 +104,7 @@ class FoodDeliveryHomePage extends StatelessWidget {
                       'Category',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => OrderHistoryPage()),
-                        );
-                      },
-                      child: const Text('See All'),
-                    ),
+
                   ],
                 ),
                 const SizedBox(height: 16),

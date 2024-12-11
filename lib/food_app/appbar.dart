@@ -2,7 +2,7 @@ import 'package:broadway/food_app/search_br.dart';
 import 'package:broadway/providerss/app_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'food_provider.dart';
+
 
 class CustomAppBarContent extends StatefulWidget {
   const CustomAppBarContent({super.key});
@@ -14,7 +14,7 @@ class CustomAppBarContent extends StatefulWidget {
 class _CustomAppBarContentState extends State<CustomAppBarContent> {
   @override
   Widget build(BuildContext context) {
-    return Consumer<AppBarState>(
+    return Consumer(
       builder: (context, appBarState, child) {
         return Column(
           children: [

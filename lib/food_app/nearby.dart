@@ -101,7 +101,7 @@ class _NearbyRestaurantsWidgetState extends State<NearbyRestaurantsWidget> {
                                       borderRadius: BorderRadius.circular(8),
                                       child: restaurant.image.isNotEmpty
                                           ? Image.network(
-                                        'https://broadway.icgedu.com${restaurant.image}',
+                                        restaurant.image,
                                         height: 120,
                                         width: double.infinity,
                                         fit: BoxFit.cover,
