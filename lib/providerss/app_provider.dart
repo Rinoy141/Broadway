@@ -275,6 +275,8 @@ class MainProvider extends ChangeNotifier {
     }
   }
 
+
+
   Future<void> loadOnboardingState() async {
     if (_cookieJar == null) {
       print('CookieJar is null during loadOnboardingState');
@@ -1772,11 +1774,6 @@ class MainProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  /// reviews
-
-
-
-
 
 
   /// Logout method
@@ -1789,6 +1786,11 @@ class MainProvider extends ChangeNotifier {
     notifyListeners();
     print('Logged out and cookies cleared');
   }
+
+
+
+
+
 
   /// Show error dialog with a custom message
   void _showErrorDialog(BuildContext context, String message) {

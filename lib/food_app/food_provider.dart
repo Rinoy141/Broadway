@@ -1,4 +1,5 @@
 import 'package:broadway/food_app/search_br.dart';
+import 'package:broadway/profile/profile.dart';
 import 'package:broadway/profile/view_profile.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -15,7 +16,7 @@ class BottomNavBarProvider extends ChangeNotifier {
     SearchPage(),
     CartPage(),
     OrderHistoryPage(),
-    ProfileViewPage(),
+    ProfileScreen(),
   ];
 
   Widget get currentPage => _pages[_selectedIndex];
