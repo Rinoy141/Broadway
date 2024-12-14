@@ -274,6 +274,147 @@ class MainProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchCartItems() async {
+    try {
+      _isLoading = true;
+      _error = '';
+      notifyListeners();
+
+      final url = 'https://broadway.icgedu.com/food/viewcart/';
+
+      // Retrieve token from SharedPreferences
+      final token = await SharedPreferencesHelper.getAuthToken();
+
+      final response = await _dio.get(
+        url,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Cookie': await getCookieString(Uri.parse(url)),
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+        final totalPriceValue = responseData['Total Price'];
+
+        _cartItems = (responseData['Items'] as List)
+            .map((item) => CartItem.fromJson(item))
+            .toList();
+
+        _totalPrice = totalPriceValue is num
+            ? totalPriceValue.toDouble()
+            : double.tryParse(totalPriceValue.toString()) ?? 0.0;
+      } else {
+        throw Exception('Failed to load cart items');
+      }
+    } catch (e) {
+      _error = 'Error fetching cart items: ${e.toString()}';
+      _cartItems = [];
+      _totalPrice = 0.0;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+
+  Future<void> removeCartItem(int cartItemId) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final url = 'https://broadway.icgedu.com/food/deletecart/$cartItemId';
+
+
+      final token = await SharedPreferencesHelper.getAuthToken();
+
+      final response = await _dio.delete(
+        url,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Cookie': await getCookieString(Uri.parse(url)),
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        _cartItems.removeWhere((item) => item.id == cartItemId);
+
+        _totalPrice = _cartItems.fold(
+            0.0, (total, item) => total + (item.price * item.quantity));
+
+        notifyListeners();
+      } else {
+        throw Exception('Failed to remove cart item');
+      }
+    } catch (e) {
+      _error = 'Error removing cart item: ${e.toString()}';
+      notifyListeners();
+      rethrow;
+    } finally {
+      _isLoading = false;
+    }
+  }
+
+
+  Future<void> updateCartItemQuantity(int cartItemId, int newQuantity) async {
+    try {
+      final url = 'https://broadway.icgedu.com/food/cartupdate/$cartItemId';
+
+      // Retrieve token from SharedPreferences
+      final token = await SharedPreferencesHelper.getAuthToken();
+
+      final response = await _dio.put(
+        url,
+        data: {"Quantity": newQuantity},
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token', // Add Authorization Bearer token
+            'Cookie': await getCookieString(Uri.parse(url)), // Include cookie if required
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final updatedItemIndex =
+        _cartItems.indexWhere((item) => item.id == cartItemId);
+        if (updatedItemIndex != -1) {
+          _cartItems[updatedItemIndex].quantity = newQuantity;
+
+          _totalPrice = _cartItems.fold(
+              0.0, (total, item) => total + (item.price * item.quantity));
+
+          notifyListeners();
+        }
+      } else {
+        throw Exception('Failed to update cart item quantity');
+      }
+    } catch (e) {
+      print('Error in updateCartItemQuantity(): $e');
+      throw e;
+    }
+  }
+
+
+  void updateQuantity(int change) {
+    if (_quantity + change >= 1) {
+      _quantity = _quantity + change;
+      notifyListeners();
+    }
+  }
+
+  void resetQuantity() {
+    _quantity = 1;
+    notifyListeners();
+  }
+
   // Future<void> loadOnboardingState() async {
   //   if (_cookieJar == null) {
   //     print('CookieJar is null during loadOnboardingState');
@@ -566,7 +707,8 @@ Future<bool> login(BuildContext context) async {
   String? gender,
   File? profilePic,
   File? idImage,
-}) async {
+}) async
+  {
   await ensureCookieJarInitialized();
   const url = 'https://broadway.icgedu.com/user/addaddress/';
 
@@ -748,7 +890,8 @@ Future<bool> login(BuildContext context) async {
   String? gender,
   File? profilePic,
   File? idImage,
-}) async {
+}) async
+  {
   await ensureCookieJarInitialized();
   const url = 'http://broadway.icgedu.com/user/update_user_data/';
 
@@ -839,7 +982,8 @@ Future<bool> login(BuildContext context) async {
     required String gender,
     File? profilePic,
     File? idImage,
-  }) async {
+  }) async
+  {
     if (!context.mounted) return;
 
     _isLoading = true;
@@ -944,146 +1088,7 @@ Future<bool> login(BuildContext context) async {
 }
 
 
-  Future<void> fetchCartItems() async {
-  try {
-    _isLoading = true;
-    _error = '';
-    notifyListeners();
 
-    final url = 'https://broadway.icgedu.com/food/viewcart/';
-
-    // Retrieve token from SharedPreferences
-    final token = await SharedPreferencesHelper.getAuthToken();
-
-    final response = await _dio.get(
-      url,
-      options: Options(
-        headers: {
-          'Authorization': 'Bearer $token', 
-          'Cookie': await getCookieString(Uri.parse(url)), 
-          'Accept': 'application/json',
-        },
-      ),
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = response.data;
-      final totalPriceValue = responseData['Total Price'];
-
-      _cartItems = (responseData['Items'] as List)
-          .map((item) => CartItem.fromJson(item))
-          .toList();
-
-      _totalPrice = totalPriceValue is num
-          ? totalPriceValue.toDouble()
-          : double.tryParse(totalPriceValue.toString()) ?? 0.0;
-    } else {
-      throw Exception('Failed to load cart items');
-    }
-  } catch (e) {
-    _error = 'Error fetching cart items: ${e.toString()}';
-    _cartItems = [];
-    _totalPrice = 0.0;
-  } finally {
-    _isLoading = false;
-    notifyListeners();
-  }
-}
-
-
-  Future<void> removeCartItem(int cartItemId) async {
-  try {
-    _isLoading = true;
-    notifyListeners();
-
-    final url = 'https://broadway.icgedu.com/food/deletecart/$cartItemId';
-
-
-    final token = await SharedPreferencesHelper.getAuthToken();
-
-    final response = await _dio.delete(
-      url,
-      options: Options(
-        headers: {
-          'Authorization': 'Bearer $token', 
-          'Cookie': await getCookieString(Uri.parse(url)), 
-          'Accept': 'application/json',
-        },
-      ),
-    );
-
-    if (response.statusCode == 200) {
-      _cartItems.removeWhere((item) => item.id == cartItemId);
-
-      _totalPrice = _cartItems.fold(
-          0.0, (total, item) => total + (item.price * item.quantity));
-
-      notifyListeners();
-    } else {
-      throw Exception('Failed to remove cart item');
-    }
-  } catch (e) {
-    _error = 'Error removing cart item: ${e.toString()}';
-    notifyListeners();
-    rethrow;
-  } finally {
-    _isLoading = false;
-  }
-}
-
-
-  Future<void> updateCartItemQuantity(int cartItemId, int newQuantity) async {
-  try {
-    final url = 'https://broadway.icgedu.com/food/cartupdate/$cartItemId';
-
-    // Retrieve token from SharedPreferences
-    final token = await SharedPreferencesHelper.getAuthToken();
-
-    final response = await _dio.put(
-      url,
-      data: {"Quantity": newQuantity},
-      options: Options(
-        headers: {
-          'Authorization': 'Bearer $token', // Add Authorization Bearer token
-          'Cookie': await getCookieString(Uri.parse(url)), // Include cookie if required
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-      ),
-    );
-
-    if (response.statusCode == 200) {
-      final updatedItemIndex =
-          _cartItems.indexWhere((item) => item.id == cartItemId);
-      if (updatedItemIndex != -1) {
-        _cartItems[updatedItemIndex].quantity = newQuantity;
-
-        _totalPrice = _cartItems.fold(
-            0.0, (total, item) => total + (item.price * item.quantity));
-
-        notifyListeners();
-      }
-    } else {
-      throw Exception('Failed to update cart item quantity');
-    }
-  } catch (e) {
-    print('Error in updateCartItemQuantity(): $e');
-    throw e;
-  }
-}
-
-
-  void updateQuantity(int change) {
-    if (_quantity + change >= 1) {
-      _quantity = _quantity + change;
-      notifyListeners();
-    }
-  }
-
-  void resetQuantity() {
-    _quantity = 1;
-    notifyListeners();
-  }
 
   ///apply code
   Future<void> applyPromoCode(BuildContext context, String code) async {
@@ -1179,7 +1184,8 @@ Future<bool> login(BuildContext context) async {
   Future<bool> placeOrder(
   BuildContext context, 
   String selectedPaymentMethod
-) async {
+) async
+  {
   try {
     print('Starting to place order...');
     print('Selected payment method: $selectedPaymentMethod');
@@ -1704,7 +1710,8 @@ Future<Map<String, dynamic>> fetchSearchResults(String query) async {
   required int restaurantId,
   required int rating,
   String review = '',
-}) async {
+}) async
+  {
   try {
     // Validate rating range
     if (rating < 1 || rating > 5) {

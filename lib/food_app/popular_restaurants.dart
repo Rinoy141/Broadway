@@ -3,35 +3,19 @@ import 'package:provider/provider.dart';
 
 import '../providerss/app_provider.dart';
 import 'food_details_page.dart';
-class MostPopularRestaurantsWidget extends StatefulWidget {
-  @override
-  _MostPopularRestaurantsWidgetState createState() => _MostPopularRestaurantsWidgetState();
-}
 
-class _MostPopularRestaurantsWidgetState extends State<MostPopularRestaurantsWidget> {
-  bool _hasFetchedInitially = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchMostPopularRestaurantsIfNeeded();
-    });
-  }
-
-  void _fetchMostPopularRestaurantsIfNeeded() {
-    final loginProvider = Provider.of<MainProvider>(context, listen: false);
-    if (!_hasFetchedInitially && loginProvider.mostPopularRestaurants.isEmpty) {
-      loginProvider.fetchMostPopularRestaurants().then((_) {
-        setState(() {
-          _hasFetchedInitially = true;
-        });
-      });
-    }
-  }
-
+class MostPopularRestaurantsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final loginProvider = Provider.of<MainProvider>(context, listen: false);
+
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (loginProvider.mostPopularRestaurants.isEmpty) {
+        loginProvider.fetchMostPopularRestaurants();
+      }
+    });
+
     return Consumer<MainProvider>(
       builder: (context, mainProvider, _) {
         if (mainProvider.isLoadingMostPopular) {
@@ -55,10 +39,10 @@ class _MostPopularRestaurantsWidgetState extends State<MostPopularRestaurantsWid
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                        'Most Popular Restaurants',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                      'Most Popular Restaurants',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -72,7 +56,8 @@ class _MostPopularRestaurantsWidgetState extends State<MostPopularRestaurantsWid
                     scrollDirection: Axis.vertical,
                     itemCount: mainProvider.mostPopularRestaurants.length,
                     itemBuilder: (context, index) {
-                      final restaurant = mainProvider.mostPopularRestaurants[index];
+                      final restaurant =
+                          mainProvider.mostPopularRestaurants[index];
 
                       return Material(
                         color: Colors.transparent,
@@ -81,7 +66,8 @@ class _MostPopularRestaurantsWidgetState extends State<MostPopularRestaurantsWid
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => RestaurantDetailsPage(restaurantId: restaurant.id),
+                                builder: (context) => RestaurantDetailsPage(
+                                    restaurantId: restaurant.id),
                               ),
                             );
                           },
@@ -98,36 +84,39 @@ class _MostPopularRestaurantsWidgetState extends State<MostPopularRestaurantsWid
                                       borderRadius: BorderRadius.circular(8),
                                       child: restaurant.image.isNotEmpty
                                           ? Image.network(
-                                        'https://broadway.icgedu.com${restaurant.image}',
-                                        height: 120,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Image.asset(
-                                            'Assets/images/Grocery Store.png',
-                                            height: 120,
-                                            width: double.infinity,
-                                            fit: BoxFit.cover,
-                                          );
-                                        },
-                                      )
+                                              'https://broadway.icgedu.com${restaurant.image}',
+                                              height: 120,
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                return Image.asset(
+                                                  'Assets/images/Grocery Store.png',
+                                                  height: 120,
+                                                  width: double.infinity,
+                                                  fit: BoxFit.cover,
+                                                );
+                                              },
+                                            )
                                           : Image.asset(
-                                        'assets/placeholder.png',
-                                        height: 120,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                      ),
+                                              'assets/placeholder.png',
+                                              height: 120,
+                                              width: double.infinity,
+                                              fit: BoxFit.cover,
+                                            ),
                                     ),
                                     Positioned(
                                       top: 8,
                                       right: 8,
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
                                           color: restaurant.status == 'Open'
                                               ? Colors.green.withOpacity(0.8)
                                               : Colors.red.withOpacity(0.8),
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
                                         ),
                                         child: Text(
                                           restaurant.status,
@@ -145,17 +134,14 @@ class _MostPopularRestaurantsWidgetState extends State<MostPopularRestaurantsWid
                                 Text(
                                   restaurant.name,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Text(
                                   restaurant.location,
                                   style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 14,
-                                  ),
+                                      color: Colors.grey, fontSize: 14),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 Row(
@@ -171,9 +157,7 @@ class _MostPopularRestaurantsWidgetState extends State<MostPopularRestaurantsWid
                                         '${restaurant.rating} · ${restaurant.distance} km · Fee: ₹${restaurant.deliveryFee}',
                                         overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
-                                        ),
+                                            fontSize: 12, color: Colors.grey),
                                         maxLines: 1,
                                       ),
                                     ),

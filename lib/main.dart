@@ -1,4 +1,7 @@
 import 'package:broadway/common/sharedpref/shared_pref.dart';
+import 'package:broadway/food_app/state%20providers/payment_provider.dart';
+import 'package:broadway/food_app/state%20providers/profile_provider.dart';
+import 'package:broadway/food_app/state%20providers/rating_provider.dart';
 import 'package:broadway/login/app_selection.dart';
 import 'package:broadway/onbrding_screen/onbrding_provider.dart';
 import 'package:broadway/onbrding_screen/onbrding_screen.dart';
@@ -15,8 +18,10 @@ void main() async{
     MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (context) => MainProvider()),
-      //ChangeNotifierProvider(create: (context) => NotificationSettings()),
-      //ChangeNotifierProvider(create: (_) => MainProvider()..loadOnboardingState()),
+      ChangeNotifierProvider(create: (context) => ProfileViewProvider()),
+      ChangeNotifierProvider(create: (context) => PaymentMethodProvider()),
+      ChangeNotifierProvider(create: (context) => RatingProvider()),
+
 
     ],
     child:  MyApp(userId: userId,),

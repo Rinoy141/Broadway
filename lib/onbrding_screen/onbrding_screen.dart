@@ -2,7 +2,7 @@
 // import 'package:broadway/onbrding_screen/logo.dart';
 // import 'package:broadway/onbrding_screen/onbrding_provider.dart';
 // import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
+// import 'package:provider/bottomnav_provider.dart';
 // import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 

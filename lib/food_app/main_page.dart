@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'food_provider.dart';
+import 'state providers/bottomnav_provider.dart';
 
 class MainPage extends StatelessWidget {
   const MainPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+
     return ChangeNotifierProvider(
       create: (context) => BottomNavBarProvider(),
       child: Consumer<BottomNavBarProvider>(
