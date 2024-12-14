@@ -112,7 +112,6 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -131,10 +130,14 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                   children: [
                     const Icon(Icons.star, color: Colors.amber, size: 20),
                     Text(
-                      restaurant.averageRating?.toString() ?? 'N/A',
+                      restaurant.averageRating != null
+                          ? restaurant.averageRating!
+                              .toStringAsFixed(1) 
+                          : 'N/A',
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
+
                     const SizedBox(width: 16),
                     const Icon(Icons.location_on, size: 16),
                     Text(
@@ -390,6 +393,12 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    if (provider.reviews.isEmpty) {
+      return const Center(
+        child: Text('No reviews available'),
+      );
+    }
+
     if (provider.error.isNotEmpty) {
       return Center(
         child: Column(
@@ -415,9 +424,8 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
       itemBuilder: (context, index) {
         final review = provider.reviews[index];
         return Padding(
-          padding: const EdgeInsets.only(left: 16,right: 16,bottom: 16),
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
           child: Column(
-
             children: [
               Row(
                 children: [
@@ -426,7 +434,8 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                         AssetImage('Assets/images/Ellipse 1 (4).png'),
                   ),
                   const SizedBox(width: 8),
-                  Column(crossAxisAlignment: CrossAxisAlignment.start,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(review.customerName,
                           style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -442,19 +451,18 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                           color: Colors.amber,
                         ),
                         onRatingUpdate: (_) {},
-                      ),],
+                      ),
+                    ],
                   ),
-                 ],
+                ],
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       review.review,
-
                     ),
                   ),
                 ],

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'food_provider.dart';
 
-
-
 class MainPage extends StatelessWidget {
   const MainPage({super.key});
 
@@ -16,7 +14,6 @@ class MainPage extends StatelessWidget {
           return WillPopScope(
             onWillPop: () async {
               if (bottomNavBarProvider.selectedIndex != 0) {
-
                 bottomNavBarProvider.onItemTapped(0);
                 return false;
               }

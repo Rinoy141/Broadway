@@ -1,6 +1,7 @@
 import 'package:broadway/providerss/app_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({Key? key}) : super(key: key);
@@ -10,6 +11,7 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
+  late Razorpay _razorpay;
   String selectedPaymentMethod = 'Online Payment';
 
   @override
@@ -18,7 +20,75 @@ class _CartPageState extends State<CartPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<MainProvider>(context, listen: false).fetchCartItems();
       Provider.of<MainProvider>(context, listen: false).fetchUserProfile();
+      _razorpay = Razorpay();
+      _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+      _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+      _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
     });
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
+  }
+
+  void openCheckout(double amount) {
+    var options = {
+      'key': 'rzp_test_0a1iTvhYcm3i6c',
+      'amount': (amount * 100).toInt(),
+      'name': 'Broadway Food',
+      'description': 'Payment for your order',
+      'prefill': {
+        'contact': '6282260069',
+        'email': 'jaseemonkt@gmail.com',
+      },
+      'external': {
+        'wallets': ['paytm'],
+      },
+      'theme': {'color': '#004BFE'}
+    };
+
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      debugPrint('Error: $e');
+    }
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    try {
+      print('Payment success response received: ${response.paymentId}');
+      final isNotified = await Provider.of<MainProvider>(context, listen: false)
+          .notifyRazorpayOrder();
+
+      if (!isNotified) {
+        throw Exception('Failed to notify backend');
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                'Thanks for ordering! Your order has been confirmed and is on its way.')),
+      );
+    } catch (e) {
+      print('Error in _handlePaymentSuccess: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred: ${e.toString()}')),
+      );
+    }
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    print(
+        'Payment failed. Code: ${response.code}, Message: ${response.message}');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Payment failed: ${response.message}')),
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    print('External wallet selected: ${response.walletName}');
   }
 
   @override
@@ -34,12 +104,9 @@ class _CartPageState extends State<CartPage> {
       ),
       body: Consumer<MainProvider>(
         builder: (context, cartProvider, child) {
-          // Loading state
           if (cartProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          // Error state
           if (cartProvider.error.isNotEmpty) {
             return Center(
               child: Column(
@@ -57,7 +124,6 @@ class _CartPageState extends State<CartPage> {
             );
           }
 
-          // Empty cart state
           if (cartProvider.cartItems.isEmpty) {
             return Center(
               child: Column(
@@ -168,11 +234,9 @@ class _CartPageState extends State<CartPage> {
                         final onQuantityChanged = (int newQuantity) async {
                           try {
                             if (newQuantity > 0) {
-
                               setState(() {
                                 cartItem.quantity = newQuantity;
                               });
-
 
                               await cartProvider.updateCartItemQuantity(
                                   cartItem.id, newQuantity);
@@ -180,7 +244,6 @@ class _CartPageState extends State<CartPage> {
                               await cartProvider.removeCartItem(cartItem.id);
                             }
                           } catch (e) {
-
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
@@ -188,7 +251,6 @@ class _CartPageState extends State<CartPage> {
                                 backgroundColor: Colors.red,
                               ),
                             );
-
 
                             await cartProvider.fetchCartItems();
                           }
@@ -346,14 +408,139 @@ class _CartPageState extends State<CartPage> {
                     ],
                   ),
                 ),
+                //new one fixed
+
+                // ElevatedButton(
+                //   onPressed: () {
+                //     if (cartProvider.cartItems.isNotEmpty) {
+                //       if (selectedPaymentMethod == 'Online Payment') {
+                //         Provider.of<MainProvider>(context, listen: false)
+                //             .placeOrder(
+                //           context,
+                //           'online_payment',
+                //         )
+                //             .then((value) {
+                //           openCheckout(cartProvider.cartItems.first.totalPrice);
+                //         });
+                //       } else {
+                //         Provider.of<MainProvider>(context, listen: false)
+                //             .placeOrder(
+                //           context,
+                //           'cash_on_delivery',
+                //         )
+                //             .then((value) {
+                //           showDialog(
+                //             context: context,
+                //             builder: (BuildContext context) {
+                //               return AlertDialog(
+                //                 title: const Text('Order Successful'),
+                //                 content: const Text(
+                //                     'Your order has been placed successfully! Thank you for choosing Cash on Delivery.'),
+                //                 actions: [
+                //                   TextButton(
+                //                     onPressed: () {
+                //                       Navigator.of(context)
+                //                           .pop(); // Close the dialog
+                //                     },
+                //                     child: const Text('OK'),
+                //                   ),
+                //                 ],
+                //               );
+                //             },
+                //           );
+                //         });
+                //       }
+                //     } else {
+                //       ScaffoldMessenger.of(context).showSnackBar(
+                //         SnackBar(content: Text('Your cart is empty')),
+                //       );
+                //     }
+                //   },
+                //   style: ElevatedButton.styleFrom(
+                //     backgroundColor: const Color(0xff004BFE),
+                //     padding: EdgeInsets.symmetric(horizontal: 120),
+                //     shape: RoundedRectangleBorder(
+                //       borderRadius: BorderRadius.circular(10),
+                //     ),
+                //   ),
+                //   child: const Text(
+                //     'Proceed to Checkout',
+                //     style: TextStyle(
+                //       fontSize: 16,
+                //       fontWeight: FontWeight.bold,
+                //       color: Colors.white,
+                //     ),
+                //   ),
+                // )
+
+                // ElevatedButton(
+                //   onPressed: () {
+                //     if (cartProvider.cartItems.isNotEmpty) {
+                //       if (selectedPaymentMethod == 'Online Payment') {
+                //         Provider.of<MainProvider>(context, listen: false)
+                //             .placeOrder(context, 'online_payment')
+                //             .then((isOrderSuccessful) {
+                //           if (isOrderSuccessful) {
+                //             openCheckout(
+                //                 cartProvider.cartItems.first.totalPrice);
+                //             _showOrderSuccessDialog(context, cartProvider);
+                //           }
+                //         });
+                //       } else {
+                //         Provider.of<MainProvider>(context, listen: false)
+                //             .placeOrder(context, 'cash_on_delivery')
+                //             .then((isOrderSuccessful) {
+                //           if (isOrderSuccessful) {
+                //             _showOrderSuccessDialog(context, cartProvider);
+                //           }
+                //         });
+                //       }
+                //     } else {
+                //       ScaffoldMessenger.of(context).showSnackBar(
+                //         SnackBar(content: Text('Your cart is empty')),
+                //       );
+                //     }
+                //   },
+                //   style: ElevatedButton.styleFrom(
+                //     backgroundColor: const Color(0xff004BFE),
+                //     padding: EdgeInsets.symmetric(horizontal: 120),
+                //     shape: RoundedRectangleBorder(
+                //       borderRadius: BorderRadius.circular(10),
+                //     ),
+                //   ),
+                //   child: const Text(
+                //     'Proceed to Checkout',
+                //     style: TextStyle(
+                //       fontSize: 16,
+                //       fontWeight: FontWeight.bold,
+                //       color: Colors.white,
+                //     ),
+                //   ),
+                // )
+
                 ElevatedButton(
                   onPressed: () {
                     if (cartProvider.cartItems.isNotEmpty) {
-                      cartProvider.placeOrder(
-                          context,
-                          selectedPaymentMethod == 'Online Payment'
-                              ? 'Online payment'
-                              : 'cash_on_delivery');
+                      if (selectedPaymentMethod == 'Online Payment') {
+                        Provider.of<MainProvider>(context, listen: false)
+                            .placeOrder(context, 'online_payment')
+                            .then((isOrderSuccessful) {
+                          if (isOrderSuccessful) {
+                            openCheckout(
+                                cartProvider.cartItems.first.totalPrice);
+                            _clearCartAndShowSuccessMessage(
+                                context, cartProvider);
+                          }
+                        });
+                      } else {
+                        Provider.of<MainProvider>(context, listen: false)
+                            .placeOrder(context, 'cash_on_delivery')
+                            .then((isOrderSuccessful) {
+                          if (isOrderSuccessful) {
+                            _showOrderSuccessDialog(context, cartProvider);
+                          }
+                        });
+                      }
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Your cart is empty')),
@@ -375,7 +562,7 @@ class _CartPageState extends State<CartPage> {
                       color: Colors.white,
                     ),
                   ),
-                ),
+                )
               ],
             ),
           );
@@ -487,6 +674,121 @@ class _CartPageState extends State<CartPage> {
   }
 }
 
+// void _showOrderSuccessDialog(BuildContext context, MainProvider cartProvider) {
+//   showDialog(
+//     context: context,
+//     builder: (BuildContext context) {
+//       return AlertDialog(
+//         title: const Text('Order Successful'),
+//         content: const Text(
+//           'Your order has been placed successfully! Would you like to clear your cart?',
+//         ),
+//         actions: [
+//           TextButton(
+//             onPressed: () {
+//               Navigator.of(context).pop();
+//             },
+//             child: const Text('No'),
+//           ),
+//           TextButton(
+//             onPressed: () async {
+
+//               var cartItemsCopy = List.from(cartProvider.cartItems);
+//               for (var item in cartItemsCopy) {
+//                 await cartProvider.removeCartItem(item.id);
+//               }
+//               Navigator.of(context).pop();
+//               ScaffoldMessenger.of(context).showSnackBar(
+//                 SnackBar(content: Text('Cart cleared successfully')),
+//               );
+//             },
+//             child: const Text('Yes, Clear Cart'),
+//           ),
+//         ],
+//       );
+//     },
+//   );
+// }
+
+void _showOrderSuccessDialog(BuildContext context, MainProvider cartProvider) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Order Successful'),
+        content: const Text(
+          'Your order has been placed successfully!.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              var cartItemsCopy = List.from(cartProvider.cartItems);
+              for (var item in cartItemsCopy) {
+                await cartProvider.removeCartItem(item.id);
+              }
+              Navigator.of(context).pop();
+              // ScaffoldMessenger.of(context).showSnackBar(
+              //   SnackBar(content: Text('Cart cleared successfully')),
+              // );
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _clearCartAndShowSuccessMessage(
+    BuildContext context, MainProvider cartProvider) async {
+
+  await Future.delayed(Duration(seconds: 10));
+
+  var cartItemsCopy = List.from(cartProvider.cartItems);
+  for (var item in cartItemsCopy) {
+    await cartProvider.removeCartItem(item.id); 
+  }
+
+
+}
+
+
+  // // Show a SnackBar to notify the user that the order was successful
+  // ScaffoldMessenger.of(context).showSnackBar(
+  //   SnackBar(content: Text('Order placed successfully! Cart cleared.')),
+  // );
+
+// void _showOrderSuccessDialog(BuildContext context, MainProvider cartProvider) {
+//   showDialog(
+//     context: context,
+//     builder: (BuildContext context) {
+//       return AlertDialog(
+//         title: const Text('Order Successful'),
+//         content: const Text(
+//           'Your order has been placed successfully.',
+//         ),
+//         actions: [
+//           TextButton(
+//             onPressed: () async {
+
+//               var cartItemsCopy = List.from(cartProvider.cartItems);
+//               for (var item in cartItemsCopy) {
+//                 await cartProvider.removeCartItem(item.id);
+//               }
+//               Navigator.of(context).pop();
+//               // ScaffoldMessenger.of(context).showSnackBar(
+//               //   SnackBar(content: Text('Cart cleared successfully')),
+//               // );
+//             },
+//             child: const Text('OK'),
+
+//           ),
+//         ],
+//       );
+//     },
+//   );
+// }
+
 void _showVoucherDialog(BuildContext context, MainProvider provider) {
   final TextEditingController voucherController = TextEditingController();
 
@@ -504,7 +806,7 @@ void _showVoucherDialog(BuildContext context, MainProvider provider) {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Close the dialog
+              Navigator.of(context).pop();
             },
             child: const Text('Cancel'),
           ),
@@ -512,13 +814,13 @@ void _showVoucherDialog(BuildContext context, MainProvider provider) {
             onPressed: () {
               final voucherCode = voucherController.text.trim();
               if (voucherCode.isNotEmpty) {
-                provider.applyPromoCode(context, voucherCode); // Call the API
+                provider.applyPromoCode(context, voucherCode);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Please enter a voucher code.')),
                 );
               }
-              Navigator.of(context).pop(); // Close the dialog
+              Navigator.of(context).pop();
             },
             child: const Text('Add'),
           ),

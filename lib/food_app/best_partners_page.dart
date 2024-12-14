@@ -63,7 +63,8 @@ class BestPartnersPage extends StatelessWidget {
                               ),
                             );
                           },
-                          child: Container(
+                          child:
+                           Container(
                             width: MediaQuery.of(context).size.width * 1,
 
                             margin: const EdgeInsets.only(right: 16),

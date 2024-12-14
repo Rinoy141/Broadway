@@ -1,28 +1,32 @@
-
-import 'package:broadway/login/loginpage.dart';
+import 'package:broadway/common/sharedpref/shared_pref.dart';
+import 'package:broadway/login/app_selection.dart';
 import 'package:broadway/onbrding_screen/onbrding_provider.dart';
 import 'package:broadway/onbrding_screen/onbrding_screen.dart';
-import 'package:broadway/profile/set_profile.dart';
 import 'package:broadway/providerss/app_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'food_app/food_provider.dart';
 
 
-void main() {
-  runApp(MultiProvider(
+
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+  final userId = await SharedPreferencesHelper.getUserId();
+  runApp(
+    MultiProvider(
     providers: [
-      ChangeNotifierProvider(create: (context) => OnboardingState()),
-      ChangeNotifierProvider(create: (context) => NotificationSettings()),
-      ChangeNotifierProvider(create: (_) => MainProvider()..loadOnboardingState()),
+      ChangeNotifierProvider(create: (context) => MainProvider()),
+      //ChangeNotifierProvider(create: (context) => NotificationSettings()),
+      //ChangeNotifierProvider(create: (_) => MainProvider()..loadOnboardingState()),
 
     ],
-    child:  MyApp(),
-  ));
+    child:  MyApp(userId: userId,),
+  )
+  );
 }
 
 class MyApp extends StatelessWidget {
-   const MyApp({super.key});
+  final String? userId;
+   const MyApp({super.key, this.userId});
 
 
   @override
@@ -30,13 +34,16 @@ class MyApp extends StatelessWidget {
 
     return Consumer<MainProvider>(
       builder: (context, mainProvider, child) {
-        print('Building MyApp with hasSeenOnboarding: ${mainProvider.hasSeenOnboarding}');
+        //print('Building MyApp with hasSeenOnboarding: ${mainProvider.hasSeenOnboarding}');
         return MaterialApp(
-            debugShowCheckedModeBanner: false, home:
-             mainProvider.hasSeenOnboarding ?  LoginPage() :  OnboardingScreen());
+            debugShowCheckedModeBanner: false, 
+            // home:
+            //  mainProvider.hasSeenOnboarding ?  LoginPage() :  OnboardingScreen()
+            home: userId != null ? AppSelection(userId: userId!,) : OnboardingScreen(),
+            //home: mainProvider.isLoading ? AppSelection() : mainProvider.hasSeenOnboarding ? LoginPage() : OnboardingScreen(),
+             );
 
       },
-
     );
   }
 }

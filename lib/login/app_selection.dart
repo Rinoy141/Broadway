@@ -1,9 +1,10 @@
-import 'package:broadway/food_app/food_delivery_homepage.dart';
+
 import 'package:broadway/food_app/main_page.dart';
 import 'package:flutter/material.dart';
 
 class AppSelection extends StatelessWidget {
-  const AppSelection({super.key});
+   final String userId;
+  const AppSelection({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context) {

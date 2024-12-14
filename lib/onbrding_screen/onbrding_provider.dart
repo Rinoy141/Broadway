@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+// import 'package:flutter/material.dart';
 
-class OnboardingState extends ChangeNotifier {
-  int currentIndex = 0;
+// class OnboardingState extends ChangeNotifier {
+//   int currentIndex = 0;
 
 
 
-  void updateCurrentIndex(int index) {
-    currentIndex = index;
-    notifyListeners();
-  }
-}
+//   void updateCurrentIndex(int index) {
+//     currentIndex = index;
+//     notifyListeners();
+//   }
+// }

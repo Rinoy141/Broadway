@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'forgot_pass_page.dart';
@@ -78,16 +77,18 @@ class LoginPage extends StatelessWidget {
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => const ForgotPasswordScreen(),
+                                    builder: (context) =>
+                                        const ForgotPasswordScreen(),
                                   ));
                             },
-                            style: const ButtonStyle(alignment: Alignment.centerRight),
+                            style: const ButtonStyle(
+                                alignment: Alignment.centerRight),
                             child: const Text('forgot password'),
                           ),
                         ),
                         const SizedBox(height: 30),
                         if (loginProvider.isLoading)
-                           Center(child: CircularProgressIndicator())
+                          Center(child: CircularProgressIndicator())
                         else
                           MaterialButton(
                             minWidth: MediaQuery.of(context).size.width * 0.9,
@@ -96,32 +97,33 @@ class LoginPage extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(17),
                             ),
-                            onPressed: loginProvider.isLoading ? null : () {
-                              loginProvider.handleLogin(context);
-                            },
+                            onPressed: loginProvider.isLoading
+                                ? null
+                                : () {
+                                    loginProvider.handleLogin(context);
+                                  },
                             child: Center(
                               child: loginProvider.isLoading
                                   ? const CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xffF3F3F3)),
-                              )
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Color(0xffF3F3F3)),
+                                    )
                                   : const Text(
-                                "Next",
-                                style: TextStyle(
-                                  color: Color(0xffF3F3F3),
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w300,
-                                ),
-                              ),
+                                      "Next",
+                                      style: TextStyle(
+                                        color: Color(0xffF3F3F3),
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w300,
+                                      ),
+                                    ),
                             ),
                           ),
-
-
                         const SizedBox(height: 16),
                         Center(
                           child: TextButton(
                             child: const Text('Cancel'),
                             onPressed: () {
-                              // Handle cancel action
+                              Navigator.pop(context);
                             },
                           ),
                         ),

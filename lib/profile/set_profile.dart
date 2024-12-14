@@ -44,7 +44,8 @@ class SetProfilePageState extends State<SetProfilePage> {
   }
 
   Future<void> _pickImage(bool isProfilePic) async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
@@ -75,7 +76,6 @@ class SetProfilePageState extends State<SetProfilePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-
                       GestureDetector(
                         onTap: () => _pickImage(true),
                         child: CircleAvatar(
@@ -85,68 +85,78 @@ class SetProfilePageState extends State<SetProfilePage> {
                               ? FileImage(_profileImage!)
                               : null,
                           child: _profileImage == null
-                              ? Icon(
-                              Icons.camera_alt,
-                              size: 50,
-                              color: Colors.grey[800]
-                          )
+                              ? Icon(Icons.camera_alt,
+                                  size: 50, color: Colors.grey[800])
                               : null,
                         ),
-
                       ),
                       const SizedBox(height: 16.0),
                       Text('Profile Picture'),
                       const SizedBox(height: 16.0),
 
-
                       TextFormField(
                         controller: addressController,
                         decoration: const InputDecoration(
                           labelText: 'Address',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                          border: OutlineInputBorder(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(10))),
                         ),
-                        validator: (value) =>
-                        value == null || value.isEmpty ? 'Address is required' : null,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Address is required'
+                            : null,
                       ),
                       const SizedBox(height: 16.0),
                       TextFormField(
                         controller: countryController,
                         decoration: const InputDecoration(
                           labelText: 'Country',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                          border: OutlineInputBorder(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(10))),
                         ),
-                        validator: (value) =>
-                        value == null || value.isEmpty ? 'Country is required' : null,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Country is required'
+                            : null,
                       ),
                       const SizedBox(height: 16.0),
                       TextFormField(
                         controller: districtController,
                         decoration: const InputDecoration(
                           labelText: 'District',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                          border: OutlineInputBorder(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(10))),
                         ),
-                        validator: (value) =>
-                        value == null || value.isEmpty ? 'District is required' : null,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'District is required'
+                            : null,
                       ),
                       const SizedBox(height: 16.0),
                       TextFormField(
                         controller: placeController,
                         decoration: const InputDecoration(
                           labelText: 'Place',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                          border: OutlineInputBorder(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(10))),
                         ),
-                        validator: (value) =>
-                        value == null || value.isEmpty ? 'Place is required' : null,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Place is required'
+                            : null,
                       ),
                       const SizedBox(height: 16.0),
                       TextFormField(
                         controller: genderController,
                         decoration: const InputDecoration(
                           labelText: 'Gender',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                          border: OutlineInputBorder(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(10))),
                         ),
-                        validator: (value) =>
-                        value == null || value.isEmpty ? 'Gender is required' : null,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Gender is required'
+                            : null,
                       ),
                       const SizedBox(height: 16.0),
 
@@ -158,20 +168,16 @@ class SetProfilePageState extends State<SetProfilePage> {
                             : 'Change ID Image'),
                       ),
                       if (_idImage != null)
-                        Image.file(
-                            _idImage!,
-                            height: 100,
-                            width: 100,
-                            fit: BoxFit.cover
-                        ),
+                        Image.file(_idImage!,
+                            height: 100, width: 100, fit: BoxFit.cover),
                       const SizedBox(height: 24.0),
 
-                      MaterialButton(minWidth: 300,
+                      MaterialButton(
+                        minWidth: 300,
                         onPressed: () async {
                           if (_formKey.currentState!.validate() &&
                               _profileImage != null &&
                               _idImage != null) {
-
                             await loginProvider.handleAddressUpdate(
                               context: context,
                               country: countryController.text.trim(),
@@ -185,14 +191,19 @@ class SetProfilePageState extends State<SetProfilePage> {
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Please upload both Profile Picture and ID Image'),
+                                content: Text(
+                                    'Please upload both Profile Picture and ID Image'),
                               ),
                             );
                           }
                         },
                         color: const Color(0xff004CFF),
-                        shape: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        child: const Text('Submit your profile', style: TextStyle(color: Colors.white),),
+                        shape: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        child: const Text(
+                          'Submit your profile',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                     ],
                   ),

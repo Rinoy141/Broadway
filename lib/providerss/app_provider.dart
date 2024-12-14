@@ -1,14 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:broadway/common/sharedpref/shared_pref.dart';
 import 'package:broadway/login/app_selection.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../login/change_password.dart';
 import '../food_app/restaurant_model.dart';
 import '../login/loginpage.dart';
@@ -37,7 +38,7 @@ class NotificationSettings extends ChangeNotifier {
   }
 }
 
-/// REGISTRATION
+
 class RegistrationProvider with ChangeNotifier {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -45,8 +46,10 @@ class RegistrationProvider with ChangeNotifier {
 
   String phoneNumber = '';
   bool isLoading = false;
+  bool isLoggedIn = false;
   String? errorMessage;
 
+  // Registration method
   Future<void> register(BuildContext context) async {
     if (!validateInputs()) return;
 
@@ -70,38 +73,34 @@ class RegistrationProvider with ChangeNotifier {
 
       print("Response received: ${response.statusCode} - ${response.body}");
 
+
       if (!context.mounted) return;
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         if (responseData['msg'] == 'Rgisteration success') {
-          // Clear any previous error messages
           errorMessage = null;
           notifyListeners();
-
-          // Navigate to login page
-          await navigateToLogin(context);
+          await navigateToLogin(context); 
           return;
         }
       }
 
-      // Handle error cases
       final responseData = jsonDecode(response.body);
       setError(responseData['msg'] ?? 'Registration failed. Please try again.');
     } catch (e) {
       setError('Connection error. Please check your internet connection.');
       print("Registration error: $e");
     } finally {
-      setLoading(false);
+      if (context.mounted) {
+        setLoading(false);
+      }
     }
   }
 
+
   Future<void> navigateToLogin(BuildContext context) async {
-
-    setLoading(false);
-
     if (!context.mounted) return;
-
 
     await Navigator.pushReplacement(
       context,
@@ -109,15 +108,18 @@ class RegistrationProvider with ChangeNotifier {
     );
   }
 
+ 
   void setLoading(bool value) {
     isLoading = value;
     notifyListeners();
   }
 
+
   void setError(String message) {
     errorMessage = message;
     notifyListeners();
   }
+
 
   bool validateInputs() {
     if (usernameController.text.trim().isEmpty ||
@@ -137,11 +139,13 @@ class RegistrationProvider with ChangeNotifier {
     return true;
   }
 
+  // Update phone number and notify listeners
   void updatePhoneNumber(String phone) {
     phoneNumber = phone;
     notifyListeners();
   }
 
+  // Dispose of controllers when provider is disposed
   @override
   void dispose() {
     usernameController.dispose();
@@ -152,12 +156,12 @@ class RegistrationProvider with ChangeNotifier {
 }
 
 ///LOGIN
-
 class MainProvider extends ChangeNotifier {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController newPasswordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -219,8 +223,6 @@ class MainProvider extends ChangeNotifier {
   List<Review> _reviews = [];
   List<Review> get reviews => _reviews;
 
-
-
   MainProvider() {
     _dio = Dio();
     _initializeCookieJar();
@@ -232,7 +234,6 @@ class MainProvider extends ChangeNotifier {
       final directory = await getApplicationDocumentsDirectory();
       final cookiesDir = '${directory.path}/cookies';
 
-
       final dir = Directory(cookiesDir);
       if (!await dir.exists()) {
         await dir.create(recursive: true);
@@ -240,10 +241,8 @@ class MainProvider extends ChangeNotifier {
 
       print('Initializing cookie jar at path: $cookiesDir');
       _cookieJar = PersistCookieJar(
-          ignoreExpires: true,
-          storage: FileStorage(cookiesDir));
+          ignoreExpires: true, storage: FileStorage(cookiesDir));
       _dio.interceptors.add(CookieManager(_cookieJar!));
-
 
       final cookies = await _cookieJar
           ?.loadForRequest(Uri.parse('https://broadway.icgedu.com'));
@@ -275,114 +274,154 @@ class MainProvider extends ChangeNotifier {
     }
   }
 
+  // Future<void> loadOnboardingState() async {
+  //   if (_cookieJar == null) {
+  //     print('CookieJar is null during loadOnboardingState');
+  //     return;
+  //   }
 
+  //   try {
+  //     final cookies =
+  //         await _cookieJar!.loadForRequest(Uri.parse('app://onboarding'));
+  //     print('Loaded cookies: $cookies');
+
+  //     final onboardingCookie = cookies.firstWhere(
+  //       (cookie) => cookie.name == 'onboarding_state',
+  //       orElse: () => Cookie('onboarding_state', 'false'),
+  //     );
+
+  //     print('Onboarding cookie value: ${onboardingCookie.value}');
+  //     _hasSeenOnboarding = onboardingCookie.value == 'true';
+
+  //     print('Has seen onboarding: $_hasSeenOnboarding');
+  //   } catch (e) {
+  //     print('Error loading onboarding state: $e');
+  //     _hasSeenOnboarding = false;
+  //   }
+  //   notifyListeners();
+  // }
 
   Future<void> loadOnboardingState() async {
-    if (_cookieJar == null) {
-      print('CookieJar is null during loadOnboardingState');
-      return;
-    }
+  // Initialize the cookie jar if it's not already initialized
+  _initializeCookieJar();
 
-    try {
-      final cookies = await _cookieJar!.loadForRequest(Uri.parse('app://onboarding'));
-      print('Loaded cookies: $cookies');
-
-      final onboardingCookie = cookies.firstWhere(
-            (cookie) => cookie.name == 'onboarding_state',
-        orElse: () => Cookie('onboarding_state', 'false'),
-      );
-
-      print('Onboarding cookie value: ${onboardingCookie.value}');
-      _hasSeenOnboarding = onboardingCookie.value == 'true';
-
-      print('Has seen onboarding: $_hasSeenOnboarding');
-    } catch (e) {
-      print('Error loading onboarding state: $e');
-      _hasSeenOnboarding = false;
-    }
-    notifyListeners();
+  if (_cookieJar == null) {
+    print('CookieJar is still null during loadOnboardingState');
+    return;
   }
 
-  Future<void> setOnboardingComplete() async {
-    if (_cookieJar == null) {
-      print('CookieJar is null during setOnboardingComplete');
-      return;
-    }
+  try {
+    final cookies =
+        await _cookieJar!.loadForRequest(Uri.parse('app://onboarding'));
+    print('Loaded cookies: $cookies');
 
-    final onboardingCookie = Cookie('onboarding_state', 'true')
-      ..path = '/'
-      ..maxAge = 31536000; // 1 year in seconds
+    final onboardingCookie = cookies.firstWhere(
+      (cookie) => cookie.name == 'onboarding_state',
+      orElse: () => Cookie('onboarding_state', 'false'),
+    );
 
-    await _cookieJar!.saveFromResponse(Uri.parse('app://onboarding'), [onboardingCookie]);
-    _hasSeenOnboarding = true;
-    print('Onboarding set to complete. Saved cookie.');
-    notifyListeners();
+    print('Onboarding cookie value: ${onboardingCookie.value}');
+    _hasSeenOnboarding = onboardingCookie.value == 'true';
+
+    print('Has seen onboarding: $_hasSeenOnboarding');
+  } catch (e) {
+    print('Error loading onboarding state: $e');
+    _hasSeenOnboarding = false;
   }
+  notifyListeners();
+}
+
+
+  // Future<void> setOnboardingComplete() async {
+  //   if (_cookieJar == null) {
+  //     print('CookieJar is null during setOnboardingComplete');
+  //     return;
+  //   }
+
+  //   final onboardingCookie = Cookie('onboarding_state', 'true')
+  //     ..path = '/'
+  //     ..maxAge = 31536000; 
+
+  //   await _cookieJar!
+  //       .saveFromResponse(Uri.parse('app://onboarding'), [onboardingCookie]);
+  //   _hasSeenOnboarding = true;
+  //   print('Onboarding set to complete. Saved cookie.');
+  //   notifyListeners();
+  // }
 
 
 
-  /// Basic login authentication
-  Future<bool> login(BuildContext context) async {
-    await ensureCookieJarInitialized();
-    print('Login process started');
+Future<bool> login(BuildContext context) async {
+  await ensureCookieJarInitialized();
+  print('Login process started');
 
-    const url = 'https://broadway.icgedu.com/user/login/';
-    final body = {
-      'Email': emailController.text,
-      'Password': passwordController.text,
-    };
+  const url = 'https://broadway.icgedu.com/user/login/';
+  final body = {
+    'Email': emailController.text,
+    'Password': passwordController.text,
+  };
 
-    try {
+  try {
+    final preCookies = await getCookieString(Uri.parse(url));
+    print('Cookies before login: $preCookies');
 
-      final preCookies = await getCookieString(Uri.parse(url));
-      print('Cookies before login: $preCookies');
+    final response = await _dio.post(
+      url,
+      data: jsonEncode(body),
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': preCookies,
+        },
+        validateStatus: (status) => true,
+      ),
+    );
 
-      final response = await _dio.post(
-        url,
-        data: jsonEncode(body),
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': preCookies,
-          },
-          validateStatus: (status) =>
-              true,
-        ),
-      );
+    print('Login response status: ${response.statusCode}');
+    print('Login response data: ${response.data}');
 
-      print('Login response status: ${response.statusCode}');
-      print('Login response data: ${response.data}');
+    if (response.statusCode == 200 &&
+    response.data['msg'] == 'Login Success') {
+  print('Login successful');
 
-      // Log the cookies after login
-      final postCookies = await getCookieString(Uri.parse(url));
-      print('Cookies after login: $postCookies');
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      if (response.statusCode == 200 &&
-          response.data['msg'] == 'Login Success') {
-        print('Login successful');
-
-        // Verify cookies were saved
-        final savedCookies = await _cookieJar?.loadForRequest(Uri.parse(url));
-        print('Saved cookies after login: $savedCookies');
-
-        return true;
-      } else {
-        final errorMsg = response.data['msg'] ??
-            'An error occurred. Please try again later.';
-        _showErrorDialog(context, errorMsg);
-        return false;
-      }
-    } catch (e) {
-      print('Error during login: $e');
-      _showErrorDialog(context, 'An error occurred. Please try again later.');
-      return false;
-    }
+  // Check and save userId
+  final userId = response.data['id']?.toString();
+  if (userId == null) {
+    print('User ID is null in the response.');
+    _showErrorDialog(context, 'An error occurred. Please try again later.');
+    return false;
   }
+  await prefs.setString('userId', userId);
 
+  
+  final token = response.data['session_id'];
+  if (token == null) {
+    print('Token is null in the response.');
+    _showErrorDialog(context, 'An error occurred. Please try again later.');
+    return false;
+  }
+  await prefs.setString('authToken', token);
 
+  print("User ID saved in SharedPreferences: $userId");
+  print("Token saved in SharedPreferences: $token");
 
+  //Provider.of<MainProvider>(context, listen: false).loadOnboardingState();
+  return true;
+} else {
+  final errorMsg = response.data['msg'] ?? 'Invalid credentials';
+  _showErrorDialog(context, errorMsg);
+  return false;
+}
 
-  /// Main login handler with navigation logic
+  } catch (e) {
+    print('Error during login: $e');
+    _showErrorDialog(context, 'An error occurred. Please try again later.');
+    return false;
+  }
+}
+
   Future<void> handleLogin(BuildContext context) async {
     if (!context.mounted) return;
 
@@ -394,25 +433,37 @@ class MainProvider extends ChangeNotifier {
       print('Login success: $loginSuccess');
 
       if (loginSuccess) {
-        // Check if profile is set
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        final userId = prefs.getString('userId');
+        print('Retrieved user ID from SharedPreferences: $userId');
+
+        if (userId == null) {
+          print('User ID not found, showing error');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text('An error occurred. Please try again.')),
+          );
+          return;
+        }
+
         final hasProfile = await isProfileSet();
         print('Has profile: $hasProfile');
 
         if (!context.mounted) return;
 
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login Successful')),
         );
 
         if (hasProfile) {
-          print('Profile exists, navigating to App selection Page');
+          print('Profile exists, navigating to AppSelection page');
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => AppSelection()),
+            MaterialPageRoute(
+                builder: (context) => AppSelection(userId: userId)),
           );
         } else {
-          print('Profile not set, navigating to EditProfilePage');
+          print('Profile not set, navigating to SetProfilePage');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => SetProfilePage()),
@@ -432,10 +483,9 @@ class MainProvider extends ChangeNotifier {
     }
   }
 
-  ///change password
+  //change password
   Future<bool> changePassword(BuildContext context) async {
     await ensureCookieJarInitialized();
-
 
     if (newPasswordController.text != confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -453,7 +503,6 @@ class MainProvider extends ChangeNotifier {
     };
 
     try {
-
       final preCookies = await getCookieString(Uri.parse(url));
       print('Cookies before change password: $preCookies');
 
@@ -472,7 +521,8 @@ class MainProvider extends ChangeNotifier {
       print('Change Password response status: ${response.statusCode}');
       print('Change Password response data: ${response.data}');
 
-      if (response.statusCode == 200 && response.data['msg'] == 'Password changed successfully') {
+      if (response.statusCode == 200 &&
+          response.data['msg'] == 'Password changed successfully') {
         // Show success snackbar
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -481,13 +531,9 @@ class MainProvider extends ChangeNotifier {
           ),
         );
         Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) =>  LoginPage())
-        );
+            context, MaterialPageRoute(builder: (context) => LoginPage()));
         return true;
-
       } else {
-
         final errorMsg = response.data['msg'] ?? 'Failed to change password';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -509,269 +555,281 @@ class MainProvider extends ChangeNotifier {
     }
   }
 
+
+
   /// Add  User Address
-
   Future<bool> addOrUpdateAddress({
-     String? country,
-     String? address,
-     String? district,
-     String? place,
-     String? gender,
-    File? profilePic,
-    File? idImage,
-  }) async
-  {
-    await ensureCookieJarInitialized();
-    const url = 'https://broadway.icgedu.com/user/addaddress/';
+  String? country,
+  String? address,
+  String? district,
+  String? place,
+  String? gender,
+  File? profilePic,
+  File? idImage,
+}) async {
+  await ensureCookieJarInitialized();
+  const url = 'https://broadway.icgedu.com/user/addaddress/';
 
+  var formData = FormData.fromMap({
+    'Country': country,
+    'Address': address,
+    'District': district,
+    'Place': place,
+    'Gender': gender,
+  });
 
-    var formData = FormData.fromMap({
-      'Country': country,
-      'Address': address,
-      'District': district,
-      'Place': place,
-      'Gender': gender,
+  if (profilePic != null) {
+    formData.files.add(MapEntry(
+      'Profile_pic',
+      await MultipartFile.fromFile(profilePic.path, filename: 'profile_pic.jpg'),
+    ));
+  }
 
-    });
+  if (idImage != null) {
+    formData.files.add(MapEntry(
+      'Id_Image',
+      await MultipartFile.fromFile(idImage.path, filename: 'id_image.jpg'),
+    ));
+  }
 
+  print('Request Body for Add/Update Address: ${formData.fields}');
 
-    if (profilePic != null) {
-      formData.files.add(
-          MapEntry(
-              'Profile_pic',
-              await MultipartFile.fromFile(profilePic.path, filename: 'profile_pic.jpg')
-          )
-      );
-    }
+  try {
+    // Retrieve token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
+    final cookieString = await getCookieString(Uri.parse(url));
+    print('Cookies for address update: $cookieString');
 
+    final response = await _dio.post(
+      url,
+      data: formData,
+      options: Options(
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token',
+        },
+      ),
+    );
 
-    if (idImage != null) {
-      formData.files.add(
-          MapEntry(
-              'Id_Image',
-              await MultipartFile.fromFile(idImage.path, filename: 'id_image.jpg')
-          )
-      );
-    }
+    print('Add/Update Address response status: ${response.statusCode}');
+    print('Add/Update Address response data: ${response.data}');
 
-    print('Request Body for Add/Update Address: ${formData.fields}');
-
-    try {
-      final cookieString = await getCookieString(Uri.parse(url));
-      print('Cookies for address update: $cookieString');
-
-      final response = await _dio.post(
-        url,
-        data: formData,
-        options: Options(
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Cookie': cookieString,
-          },
-        ),
-      );
-
-      print('Add/Update Address response status: ${response.statusCode}');
-      print('Add/Update Address response data: ${response.data}');
-
-      if (response.statusCode == 200 &&
-          (response.data['msg'] == 'Data saved Successfully' ||
-              response.data['msg']
-                  ?.toString()
-                  .toLowerCase()
-                  .contains('success') ==
-                  true)) {
-        print('Successfully added/updated address: ${response.data['msg']}');
-        return true;
-      } else {
-        print('Failed to add/update address: ${response.data['msg']}');
-        return false;
-      }
-    } catch (e) {
-      print('Error during add/update address: $e');
+    if (response.statusCode == 200 &&
+        (response.data['msg'] == 'Data saved Successfully' ||
+            response.data['msg']
+                    ?.toString()
+                    .toLowerCase()
+                    .contains('success') == true)) {
+      print('Successfully added/updated address: ${response.data['msg']}');
+      return true;
+    } else {
+      print('Failed to add/update address: ${response.data['msg']}');
       return false;
     }
+  } catch (e) {
+    print('Error during add/update address: $e');
+    return false;
   }
+}
+
 
   /// Check if user profile is set
   Future<bool> isProfileSet() async {
-    await ensureCookieJarInitialized();
+  await ensureCookieJarInitialized();
 
-    try {
-      const url = 'https://broadway.icgedu.com/user/profile_view/';
+  try {
+    const url = 'https://broadway.icgedu.com/user/profile_view/';
 
 
-      final cookieString = await getCookieString(Uri.parse(url));
-      print('Cookies before profile check: $cookieString');
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      final response = await _dio.get(
-        url,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-          },
-          validateStatus: (status) =>
-          true,
-        ),
-      );
+    final cookieString = await getCookieString(Uri.parse(url));
+    print('Cookies before profile check: $cookieString');
 
-      print('Profile check response status: ${response.statusCode}');
-      print('Profile check response data: ${response.data}');
+    final response = await _dio.get(
+      url,
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token', 
+        },
+        validateStatus: (status) => true,
+      ),
+    );
 
-      if (response.statusCode == 200 && response.data != null) {
-        final profileData = response.data;
-        if (profileData is Map) {
-          final hasProfile = profileData['Address'] != null &&
-              profileData['District'] != null &&
-              profileData['Place'] != null &&
-              profileData['Address'].toString().isNotEmpty &&
-              profileData['District'].toString().isNotEmpty &&
-              profileData['Place'].toString().isNotEmpty;
+    print('Profile check response status: ${response.statusCode}');
+    print('Profile check response data: ${response.data}');
 
-          print('Profile check result: hasProfile=$hasProfile');
-          print('Profile data: $profileData');
-          return hasProfile;
-        }
+    if (response.statusCode == 200 && response.data != null) {
+      final profileData = response.data;
+      if (profileData is Map) {
+        final hasProfile = profileData['Address'] != null &&
+            profileData['District'] != null &&
+            profileData['Place'] != null &&
+            profileData['Address'].toString().isNotEmpty &&
+            profileData['District'].toString().isNotEmpty &&
+            profileData['Place'].toString().isNotEmpty;
+
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('hasProfile', hasProfile);
+
+        print('Profile check result: hasProfile=$hasProfile');
+        print('Profile data: $profileData');
+        return hasProfile;
       }
-      print('Profile check failed: Invalid response format or status code');
-      return false;
-    } catch (e) {
-      print('Error checking profile status: $e');
-      return false;
     }
+    print('Profile check failed: Invalid response format or status code');
+    return false;
+  } catch (e) {
+    print('Error checking profile status: $e');
+    return false;
   }
+}
+
 
   ///view profile
   Future<ProfileModel?> fetchUserProfile() async {
-    try {
-      await ensureCookieJarInitialized();
+  try {
+    await ensureCookieJarInitialized();
 
-      const url = 'https://broadway.icgedu.com/user/profile_view/';
-      final cookieString = await getCookieString(Uri.parse(url));
+    const url = 'https://broadway.icgedu.com/user/profile_view/';
 
-      final response = await _dio.get(
-        url,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-          },
-          validateStatus: (status) => true,
-        ),
-      );
 
-      print('Profile view response status: ${response.statusCode}');
-      print('Profile view response data: ${response.data}');
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      if (response.statusCode == 200 && response.data != null) {
-        _userProfile = ProfileModel.fromJson(response.data);
-        notifyListeners();
-        return _userProfile;
-      } else {
-        print('Failed to fetch profile: ${response.data}');
-        _userProfile = null;
-        notifyListeners();
-        return null;
-      }
-    } catch (e) {
-      print('Error fetching profile: $e');
+    final cookieString = await getCookieString(Uri.parse(url));
+
+    final response = await _dio.get(
+      url,
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token', 
+        },
+        validateStatus: (status) => true,
+      ),
+    );
+
+    print('Profile view response status: ${response.statusCode}');
+    print('Profile view response data: ${response.data}');
+
+    if (response.statusCode == 200 && response.data != null) {
+      _userProfile = ProfileModel.fromJson(response.data);
+      notifyListeners();
+
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('userProfile', jsonEncode(response.data));
+
+      return _userProfile;
+    } else {
+      print('Failed to fetch profile: ${response.data}');
       _userProfile = null;
       notifyListeners();
       return null;
     }
+  } catch (e) {
+    print('Error fetching profile: $e');
+    _userProfile = null;
+    notifyListeners();
+    return null;
   }
-///update profile
+}
+
+
+
   Future<bool> updateUserProfile({
+  String? country,
+  String? address,
+  String? district,
+  String? place,
+  String? gender,
+  File? profilePic,
+  File? idImage,
+}) async {
+  await ensureCookieJarInitialized();
+  const url = 'http://broadway.icgedu.com/user/update_user_data/';
 
+  try {
+    var formData = FormData.fromMap({
+      if (country != null) 'Country': country,
+      if (address != null) 'Address': address,
+      if (district != null) 'District': district,
+      if (place != null) 'Place': place,
+      if (gender != null) 'Gender': gender,
+    });
 
-
-    String? country,
-    String? address,
-    String? district,
-    String? place,
-    String? gender,
-    File? profilePic,
-    File? idImage,
-  }) async {
-    await ensureCookieJarInitialized();
-    const url = 'http://broadway.icgedu.com/user/update_user_data/';
-
-    try {
-      // Create form data
-      var formData = FormData.fromMap({
-
-        if (country != null) 'Country': country,
-        if (address != null) 'Address': address,
-        if (district != null) 'District': district,
-        if (place != null) 'Place': place,
-        if (gender != null) 'Gender': gender,
-      });
-
-      // Add profile picture if provided
-      if (profilePic != null) {
-        formData.files.add(
-            MapEntry(
-                'Profile_pic',
-                await MultipartFile.fromFile(profilePic.path, filename: 'profile_pic.jpg')
-            )
-        );
-      }
-
-      // Add ID image if provided
-      if (idImage != null) {
-        formData.files.add(
-            MapEntry(
-                'Id_Image',
-                await MultipartFile.fromFile(idImage.path, filename: 'id_image.jpg')
-            )
-        );
-      }
-
-      // Print request details for debugging
-      print('Update User Data Request Body: ${formData.fields}');
-
-      // Get cookie string for authentication
-      final cookieString = await getCookieString(Uri.parse(url));
-      print('Cookies for user data update: $cookieString');
-
-      // Send POST request
-      final response = await _dio.put(
-        url,
-        data: formData,
-        options: Options(
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Cookie': cookieString,
-          },
+    if (profilePic != null) {
+      formData.files.add(
+        MapEntry(
+          'Profile_pic',
+          await MultipartFile.fromFile(profilePic.path, filename: 'profile_pic.jpg'),
         ),
       );
+    }
 
-      // Print response for debugging
-      print('Update User Data response status: ${response.statusCode}');
-      print('Update User Data response data: ${response.data}');
+    if (idImage != null) {
+      formData.files.add(
+        MapEntry(
+          'Id_Image',
+          await MultipartFile.fromFile(idImage.path, filename: 'id_image.jpg'),
+        ),
+      );
+    }
 
-      // Check for successful response
-      if (response.statusCode == 200 &&
-          (response.data['msg']?.toString().toLowerCase().contains('success') == true)) {
-        print('Successfully updated user data: ${response.data['msg']}');
+    print('Update User Data Request Body: ${formData.fields}');
 
-        // Fetch updated profile
+
+    final token = await SharedPreferencesHelper.getAuthToken();
+
+    final cookieString = await getCookieString(Uri.parse(url));
+    print('Cookies for user data update: $cookieString');
+
+    final response = await _dio.put(
+      url,
+      data: formData,
+      options: Options(
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token', 
+        },
+      ),
+    );
+
+    print('Update User Data response status: ${response.statusCode}');
+    print('Update User Data response data: ${response.data}');
+
+    if (response.statusCode == 200) {
+      if (response.data != null &&
+          response.data.containsKey('Address') &&
+          response.data.containsKey('Profile_pic')) {
+        print('Successfully updated user data: ${response.data}');
+
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userProfile', jsonEncode(response.data));
+
         await fetchUserProfile();
 
         return true;
       } else {
-        print('Failed to update user data: ${response.data['msg']}');
+        print('Response is missing expected fields: ${response.data}');
         return false;
       }
-    } catch (e) {
-      print('Error during user data update: $e');
+    } else {
+      print('Failed to update user data: ${response.statusCode}');
       return false;
     }
+  } catch (e) {
+    print('Error during user data update: $e');
+    return false;
   }
+}
 
 
-  /// Handle profile update and navigation
+
   Future<void> handleAddressUpdate({
     required BuildContext context,
     required String country,
@@ -781,209 +839,238 @@ class MainProvider extends ChangeNotifier {
     required String gender,
     File? profilePic,
     File? idImage,
-  }) async
-  {
+  }) async {
     if (!context.mounted) return;
 
     _isLoading = true;
     notifyListeners();
 
     try {
-    final success = await addOrUpdateAddress(
-    country: country,
-    address: address,
-    district: district,
-    place: place,
-    gender: gender,
-    profilePic: profilePic,
-    idImage: idImage,
-    );
+      final success = await addOrUpdateAddress(
+        country: country,
+        address: address,
+        district: district,
+        place: place,
+        gender: gender,
+        profilePic: profilePic,
+        idImage: idImage,
+      );
 
-    if (!context.mounted) return;
+      if (!context.mounted) return;
 
-    if (success) {
-    ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Profile updated successfully')),
-    );
+      if (success) {
+        // Save the updated data to SharedPreferences
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('country', country);
+        await prefs.setString('address', address);
+        await prefs.setString('district', district);
+        await prefs.setString('place', place);
+        await prefs.setString('gender', gender);
 
-    Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(builder: (context) => AppSelection()),
-    );
-    } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Failed to update profile')),
-    );
-    }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully')),
+        );
+
+        final userId = prefs.getString('userId');
+        if (userId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User ID not found')),
+          );
+          return;
+        }
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => AppSelection(userId: userId)),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update profile')),
+        );
+      }
     } finally {
-    _isLoading = false;
-    notifyListeners();
+      _isLoading = false;
+      notifyListeners();
     }
   }
-
-
 
   ///Add to cart
 
+
   Future<bool> addToCart(int itemId) async {
-    try {
-      _isLoading = true;
-      _error = '';
-      notifyListeners();
+  try {
+    _isLoading = true;
+    _error = '';
+    notifyListeners();
 
-      final url =
-          Uri.parse('https://broadway.icgedu.com/food/addcart/$itemId');
-      final cookieString = await getCookieString(url);
+    final url = Uri.parse('https://broadway.icgedu.com/food/addcart/$itemId');
 
-      final response = await _dio.post(
-        url.toString(),
-        data: {"Quantity": _quantity},
-        options: Options(
-          headers: {
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        ),
-      );
+ 
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      _isLoading = false;
+    final response = await _dio.post(
+      url.toString(),
+      data: {"Quantity": _quantity},
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token', 
+          'Cookie': await getCookieString(url), 
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ),
+    );
 
-      if (response.statusCode == 200) {
-        final responseData = response.data;
-        if (responseData['msg'] == 'Cart Added Successfully') {
-          notifyListeners();
-          return true;
-        }
+    _isLoading = false;
+
+    if (response.statusCode == 200) {
+      final responseData = response.data;
+      if (responseData['msg'] == 'Cart Added Successfully') {
+        notifyListeners();
+        return true;
       }
-
-      _error = 'Failed to add to cart';
-      notifyListeners();
-      return false;
-    } catch (e) {
-      print('Error adding to cart: $e');
-      _isLoading = false;
-      _error = 'Error adding to cart';
-      notifyListeners();
-      return false;
     }
+
+    _error = 'Failed to add to cart';
+    notifyListeners();
+    return false;
+  } catch (e) {
+    print('Error adding to cart: $e');
+    _isLoading = false;
+    _error = 'Error adding to cart';
+    notifyListeners();
+    return false;
   }
+}
+
+
   Future<void> fetchCartItems() async {
-    try {
-      _isLoading = true;
-      _error = '';
-      notifyListeners();
+  try {
+    _isLoading = true;
+    _error = '';
+    notifyListeners();
 
-      final url = 'https://broadway.icgedu.com/food/viewcart/';
-      final cookieString = await getCookieString(Uri.parse(url));
+    final url = 'https://broadway.icgedu.com/food/viewcart/';
 
-      final response = await _dio.get(
-        url,
-        options: Options(
-          headers: {
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-          },
-        ),
-      );
+    // Retrieve token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      if (response.statusCode == 200) {
-        final responseData = response.data;
-        final totalPriceValue = responseData['Total Price'];
+    final response = await _dio.get(
+      url,
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token', 
+          'Cookie': await getCookieString(Uri.parse(url)), 
+          'Accept': 'application/json',
+        },
+      ),
+    );
 
-        _cartItems = (responseData['Items'] as List)
-            .map((item) => CartItem.fromJson(item))
-            .toList();
+    if (response.statusCode == 200) {
+      final responseData = response.data;
+      final totalPriceValue = responseData['Total Price'];
 
-        _totalPrice = totalPriceValue is num
-            ? totalPriceValue.toDouble()
-            : double.tryParse(totalPriceValue.toString()) ?? 0.0;
-      } else {
-        throw Exception('Failed to load cart items');
-      }
-    } catch (e) {
-      _error = 'Error fetching cart items: ${e.toString()}';
-      _cartItems = [];
-      _totalPrice = 0.0;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      _cartItems = (responseData['Items'] as List)
+          .map((item) => CartItem.fromJson(item))
+          .toList();
+
+      _totalPrice = totalPriceValue is num
+          ? totalPriceValue.toDouble()
+          : double.tryParse(totalPriceValue.toString()) ?? 0.0;
+    } else {
+      throw Exception('Failed to load cart items');
     }
+  } catch (e) {
+    _error = 'Error fetching cart items: ${e.toString()}';
+    _cartItems = [];
+    _totalPrice = 0.0;
+  } finally {
+    _isLoading = false;
+    notifyListeners();
   }
+}
+
 
   Future<void> removeCartItem(int cartItemId) async {
-    try {
-      _isLoading = true;
+  try {
+    _isLoading = true;
+    notifyListeners();
+
+    final url = 'https://broadway.icgedu.com/food/deletecart/$cartItemId';
+
+
+    final token = await SharedPreferencesHelper.getAuthToken();
+
+    final response = await _dio.delete(
+      url,
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token', 
+          'Cookie': await getCookieString(Uri.parse(url)), 
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      _cartItems.removeWhere((item) => item.id == cartItemId);
+
+      _totalPrice = _cartItems.fold(
+          0.0, (total, item) => total + (item.price * item.quantity));
+
       notifyListeners();
-
-      final url = 'https://broadway.icgedu.com/food/deletecart/$cartItemId';
-      final cookieString = await getCookieString(Uri.parse(url));
-
-      final response = await _dio.delete(
-        url,
-        options: Options(
-          headers: {
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-
-        _cartItems.removeWhere((item) => item.id == cartItemId);
+    } else {
+      throw Exception('Failed to remove cart item');
+    }
+  } catch (e) {
+    _error = 'Error removing cart item: ${e.toString()}';
+    notifyListeners();
+    rethrow;
+  } finally {
+    _isLoading = false;
+  }
+}
 
 
-        _totalPrice = _cartItems.fold(0.0, (total, item) => total + (item.price * item.quantity));
+  Future<void> updateCartItemQuantity(int cartItemId, int newQuantity) async {
+  try {
+    final url = 'https://broadway.icgedu.com/food/cartupdate/$cartItemId';
+
+    // Retrieve token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
+
+    final response = await _dio.put(
+      url,
+      data: {"Quantity": newQuantity},
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token', // Add Authorization Bearer token
+          'Cookie': await getCookieString(Uri.parse(url)), // Include cookie if required
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final updatedItemIndex =
+          _cartItems.indexWhere((item) => item.id == cartItemId);
+      if (updatedItemIndex != -1) {
+        _cartItems[updatedItemIndex].quantity = newQuantity;
+
+        _totalPrice = _cartItems.fold(
+            0.0, (total, item) => total + (item.price * item.quantity));
 
         notifyListeners();
-      } else {
-        throw Exception('Failed to remove cart item');
       }
-    } catch (e) {
-      _error = 'Error removing cart item: ${e.toString()}';
-      notifyListeners();
-      rethrow;
-    } finally {
-      _isLoading = false;
+    } else {
+      throw Exception('Failed to update cart item quantity');
     }
+  } catch (e) {
+    print('Error in updateCartItemQuantity(): $e');
+    throw e;
   }
-  Future<void> updateCartItemQuantity(int cartItemId, int newQuantity) async {
-    try {
-      final url = 'https://broadway.icgedu.com/food/cartupdate/$cartItemId';
-      final cookieString = await getCookieString(Uri.parse(url));
-
-      final response = await _dio.put(
-        url,
-        data: {"Quantity": newQuantity},
-        options: Options(
-          headers: {
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-
-        final updatedItemIndex = _cartItems.indexWhere((item) => item.id == cartItemId);
-        if (updatedItemIndex != -1) {
-          _cartItems[updatedItemIndex].quantity = newQuantity;
-
-
-          _totalPrice = _cartItems.fold(0.0, (total, item) => total + (item.price * item.quantity));
-
-          notifyListeners();
-        }
-      } else {
-        throw Exception('Failed to update cart item quantity');
-      }
-    } catch (e) {
-      print('Error in updateCartItemQuantity(): $e');
-      throw e;
-    }
-  }
+}
 
 
   void updateQuantity(int change) {
@@ -1000,797 +1087,1061 @@ class MainProvider extends ChangeNotifier {
 
   ///apply code
   Future<void> applyPromoCode(BuildContext context, String code) async {
-    await ensureCookieJarInitialized();
+  await ensureCookieJarInitialized();
 
-    const url = 'https://broadway.icgedu.com/food/promocode/';
-    final body = {'Code': code};
+  const url = 'https://broadway.icgedu.com/food/promocode/';
+  final body = {'Code': code};
 
-    try {
-      final cookieString = await getCookieString(Uri.parse(url));
-      final response = await _dio.post(
-        url,
-        data: jsonEncode(body),
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-          },
-          validateStatus: (status) => true,
-        ),
-      );
+  try {
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      print('Promo Code response status: ${response.statusCode}');
-      print('Promo Code response data: ${response.data}');
-
-      if (response.statusCode == 200 && response.data != null) {
-        final message = response.data['msg'] ?? 'Promo code applied successfully.';
-        final newTotal = response.data['totalPrice'];
-        if (newTotal != null) {
-          _totalPrice = newTotal;
-          notifyListeners();
-        }
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-      } else {
-        final errorMsg = response.data['msg'] ?? 'Failed to apply promo code.';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg)));
-      }
-    } catch (e) {
-      print('Error applying promo code: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('An error occurred. Please try again.')),
-      );
-    }
-  }
-  ///add order
-  Future<bool> placeOrder(BuildContext context, String selectedPaymentMethod) async {
-    try {
-      await ensureCookieJarInitialized();
-
-      const url = 'https://broadway.icgedu.com/food/addorders/';
-      final cookieString = await getCookieString(Uri.parse(url));
-
-      final response = await _dio.post(
-        url,
-        data: {
-          "payment_method": selectedPaymentMethod
-
+    final cookieString = await getCookieString(Uri.parse(url));
+    final response = await _dio.post(
+      url,
+      data: jsonEncode(body),
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token', 
         },
+        validateStatus: (status) => true,
+      ),
+    );
 
+    print('Promo Code response status: ${response.statusCode}');
+    print('Promo Code response data: ${response.data}');
 
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-          },
-
-        ),
-      );
-      print('Place Order response status: ${response.statusCode}');
-      print('Place Order response data: ${response.data}');
-      print('Order type: $selectedPaymentMethod');
-
-      if (response.statusCode == 200) {
-
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Order Placed Successfully')),
-            );
-          }
-          return true;
-
-      } else {
-        throw Exception('Failed to place order');
+    if (response.statusCode == 200 && response.data != null) {
+      final message = response.data['msg'] ?? 'Promo code applied successfully.';
+      final newTotal = response.data['totalPrice'];
+      if (newTotal != null) {
+        _totalPrice = newTotal;
+        notifyListeners();
       }
-    } catch (e) {
-      print('Error placing order: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } else {
+      final errorMsg = response.data['msg'] ?? 'Failed to apply promo code.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMsg)));
+    }
+  } catch (e) {
+    print('Error applying promo code: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('An error occurred. Please try again.')),
+    );
+  }
+}
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to place order: ${e.toString()}')),
-        );
-      }
+
+  Future<bool> notifyRazorpayOrder() async {
+  try {
+    const url = 'https://broadway.icgedu.com/food/razorpay_order/';
+    print('Notifying backend: $url');
+
+    final token = await SharedPreferencesHelper.getAuthToken();
+
+    final cookieString = await getCookieString(Uri.parse(url));
+
+    final requestData = {
+      // 'message': message,
+      "message": "success",
+    };
+
+    print("requested data $requestData");
+
+    final response = await _dio.post(
+      url,
+      data: requestData,
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token', 
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      print('Successfully notified backend about Razorpay order.');
+      return true;
+    } else {
+      print('Failed to notify backend. Response: ${response.data}');
       return false;
     }
+  } catch (e) {
+    print('Error occurred while notifying Razorpay order: $e');
+    return false;
   }
-/// show order history
-  Future<void> fetchOrderHistory() async {
+}
+
+
+  //addorders
+  Future<bool> placeOrder(
+  BuildContext context, 
+  String selectedPaymentMethod
+) async {
+  try {
+    print('Starting to place order...');
+    print('Selected payment method: $selectedPaymentMethod');
+
     await ensureCookieJarInitialized();
+    print('Cookie jar initialized.');
 
-    _isOrderHistoryLoading = true;
-    _orderHistoryErrorMessage = '';
-    notifyListeners();
+    const url = 'https://broadway.icgedu.com/food/addorders/';
+    print('API endpoint: $url');
 
-    try {
-      const url = 'https://broadway.icgedu.com/food/orderhistory/';
-      final cookieString = await getCookieString(Uri.parse(url));
+    final cookieString = await getCookieString(Uri.parse(url));
+    print('Cookie string retrieved: $cookieString');
 
-      final response = await _dio.get(
-        url,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-          },
-        ),
-      );
+    if (cookieString.isEmpty) {
+      throw Exception('Session cookie is empty. User might not be logged in.');
+    }
 
-      if (response.statusCode == 200) {
-        final List<dynamic> responseData = response.data;
-        _orderHistory = responseData
-            .map((item) => OrderHistoryItem.fromJson(item))
-            .toList();
-        _isOrderHistoryLoading = false;
-        notifyListeners();
-      } else {
-        _orderHistoryErrorMessage = 'Failed to load order history';
-        _isOrderHistoryLoading = false;
-        notifyListeners();
+    // Retrieve the Bearer token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
+
+    // Prepare the request data
+    final requestData = {
+      "payment_method": selectedPaymentMethod,
+    };
+    print('Request Data: $requestData');
+
+    final response = await _dio.post(
+      url,
+      data: requestData,
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token', // Add the Bearer token here
+        },
+      ),
+    );
+
+    print('Response status code: ${response.statusCode}');
+    print('Response data: ${response.data}');
+
+    if (response.statusCode == 200) {
+      print('Order placed successfully.');
+      return true;
+    } else {
+      print('Unexpected response status: ${response.statusCode}');
+      print('Response data: ${response.data}');
+      throw Exception('Failed to place order: ${response.statusCode}');
+    }
+  } catch (e) {
+    if (e is DioError) {
+      print('DioError: ${e.message}');
+      if (e.response != null) {
+        print('Response data: ${e.response?.data}');
+        print('Response status: ${e.response?.statusCode}');
       }
-    } catch (e) {
-      _orderHistoryErrorMessage = 'An error occurred: ${e.toString()}';
+    } else {
+      print('Error occurred while placing order: $e');
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to place order: ${e.toString()}')),
+      );
+    }
+    return false;
+  }
+}
+
+
+  ///add order
+  // Future<bool> placeOrder(BuildContext context, String selectedPaymentMethod) async {
+  //   try {
+  //     await ensureCookieJarInitialized();
+
+  //     const url = 'https://broadway.icgedu.com/food/addorders/';
+  //     final cookieString = await getCookieString(Uri.parse(url));
+
+  //     final response = await _dio.post(
+  //       url,
+  //       data: {
+  //         "payment_method": selectedPaymentMethod
+
+  //       },
+
+  //       options: Options(
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           'Cookie': cookieString,
+  //         },
+
+  //       ),
+  //     );
+  //     print('Place Order response status: ${response.statusCode}');
+  //     print('Place Order response data: ${response.data}');
+  //     print('Order type: $selectedPaymentMethod');
+
+  //     if (response.statusCode == 200) {
+
+  //         if (context.mounted) {
+  //           ScaffoldMessenger.of(context).showSnackBar(
+  //             SnackBar(content: Text('Order Placed Successfully')),
+  //           );
+  //         }
+  //         return true;
+
+  //     } else {
+  //       throw Exception('Failed to place order');
+  //     }
+  //   } catch (e) {
+  //     print('Error placing order: $e');
+
+  //     if (context.mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(content: Text('Failed to place order: ${e.toString()}')),
+  //       );
+  //     }
+  //     return false;
+  //   }
+  // }
+
+  /// show order history
+  Future<void> fetchOrderHistory() async {
+  await ensureCookieJarInitialized();
+
+  _isOrderHistoryLoading = true;
+  _orderHistoryErrorMessage = '';
+  notifyListeners();
+
+  try {
+    const url = 'https://broadway.icgedu.com/food/orderhistory/';
+    final cookieString = await getCookieString(Uri.parse(url));
+
+    // Retrieve the Bearer token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
+
+    final response = await _dio.get(
+      url,
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token', // Add the Bearer token here
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> responseData = response.data;
+      _orderHistory = responseData
+          .map((item) => OrderHistoryItem.fromJson(item))
+          .toList();
+      _isOrderHistoryLoading = false;
+      notifyListeners();
+    } else {
+      _orderHistoryErrorMessage = 'Failed to load order history';
       _isOrderHistoryLoading = false;
       notifyListeners();
     }
+  } catch (e) {
+    _orderHistoryErrorMessage = 'An error occurred: ${e.toString()}';
+    _isOrderHistoryLoading = false;
+    notifyListeners();
   }
+}
+
+
   ///show ongoing order
   Future<void> fetchOngoingOrders() async {
-    await ensureCookieJarInitialized();
+  await ensureCookieJarInitialized();
 
-    _isOngoingOrdersLoading = true;
-    _ongoingOrdersErrorMessage = '';
-    notifyListeners();
+  _isOngoingOrdersLoading = true;
+  _ongoingOrdersErrorMessage = '';
+  notifyListeners();
 
-    try {
-      const url = 'https://broadway.icgedu.com/food/ongoingorders/';
-      final cookieString = await getCookieString(Uri.parse(url));
+  try {
+    const url = 'https://broadway.icgedu.com/food/ongoingorders/';
+    final cookieString = await getCookieString(Uri.parse(url));
 
-      final response = await _dio.get(
-        url,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-          },
-        ),
-      );
+    // Retrieve the Bearer token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      if (response.statusCode == 200) {
+    final response = await _dio.get(
+      url,
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token', // Add the Bearer token here
+        },
+      ),
+    );
 
-        if (response.data is List) {
-          final List<dynamic> responseData = response.data;
-          _ongoingOrders = responseData
-              .map((item) => OrderHistoryItem.fromJson(item))
-              .toList();
-        } else if (response.data is Map &&
-            response.data['msg'] == 'No item ongoing') {
-
-          _ongoingOrders = [];
-        } else {
-
-          _ongoingOrders = [];
-          _ongoingOrdersErrorMessage = 'Unexpected response format';
-        }
-
-        _isOngoingOrdersLoading = false;
-        notifyListeners();
+    if (response.statusCode == 200) {
+      if (response.data is List) {
+        final List<dynamic> responseData = response.data;
+        _ongoingOrders = responseData
+            .map((item) => OrderHistoryItem.fromJson(item))
+            .toList();
+      } else if (response.data is Map &&
+          response.data['msg'] == 'No item ongoing') {
+        _ongoingOrders = [];
       } else {
-        _ongoingOrdersErrorMessage = 'Failed to load ongoing orders';
-        _isOngoingOrdersLoading = false;
-        notifyListeners();
+        _ongoingOrders = [];
+        _ongoingOrdersErrorMessage = 'Unexpected response format';
       }
-    } catch (e) {
-      _ongoingOrdersErrorMessage = 'An error occurred: ${e.toString()}';
+
+      _isOngoingOrdersLoading = false;
+      notifyListeners();
+    } else {
+      _ongoingOrdersErrorMessage = 'Failed to load ongoing orders';
       _isOngoingOrdersLoading = false;
       notifyListeners();
     }
+  } catch (e) {
+    _ongoingOrdersErrorMessage = 'An error occurred: ${e.toString()}';
+    _isOngoingOrdersLoading = false;
+    notifyListeners();
   }
+}
+
+
   ///cancel order
   Future<bool> cancelOrder(BuildContext context, int orderId) async {
-    await ensureCookieJarInitialized();
+  await ensureCookieJarInitialized();
 
-    final url = 'https://broadway.icgedu.com/food/cancelorder/$orderId';
+  final url = 'https://broadway.icgedu.com/food/cancelorder/$orderId';
 
-    try {
-      final cookieString = await getCookieString(Uri.parse(url));
+  try {
+    final cookieString = await getCookieString(Uri.parse(url));
 
-      final response = await _dio.put(
-        url,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-          },
-          validateStatus: (status) => true,
+    // Retrieve the Bearer token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
+
+    final response = await _dio.put(
+      url,
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token', // Add the Bearer token here
+        },
+        validateStatus: (status) => true,
+      ),
+    );
+
+    print('Cancel Order response status: ${response.statusCode}');
+    print('Cancel Order response data: ${response.data}');
+
+    if (response.statusCode == 200 &&
+        response.data['msg'] == 'Order cancelled successfully') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Order cancelled successfully'),
+          backgroundColor: Colors.green,
         ),
       );
 
-      print('Cancel Order response status: ${response.statusCode}');
-      print('Cancel Order response data: ${response.data}');
-
-      if (response.statusCode == 200 &&
-          response.data['msg'] == 'Order cancelled successfully') {
-
-
-
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Order cancelled successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        return true;
-      } else {
-        final errorMsg = response.data['msg'] ?? 'Failed to cancel order';
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMsg),
-            backgroundColor: Colors.red,
-          ),
-        );
-
-        return false;
-      }
-    } catch (e) {
-      print('Error during order cancellation: $e');
+      return true;
+    } else {
+      final errorMsg = response.data['msg'] ?? 'Failed to cancel order';
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('An error occurred. Please try again.'),
+          content: Text(errorMsg),
           backgroundColor: Colors.red,
         ),
       );
 
       return false;
     }
+  } catch (e) {
+    print('Error during order cancellation: $e');
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('An error occurred. Please try again.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+
+    return false;
   }
+}
 
 
   /// Perform search query
   Future<void> searchMenuAndRestaurants(String query) async {
-    try {
-      if (query.isEmpty) {
-        currentSearchResults = [];
-        menuResults = [];
-        restaurantResults = [];
-        notifyListeners();
-        return;
-      }
-
-      final searchResults = await fetchSearchResults(query);
-
-
-      menuResults = searchResults['menu_items'] ?? [];
-      restaurantResults = searchResults['restaurants'] ?? [];
-
-
-      currentSearchResults = [...menuResults, ...restaurantResults];
-
+  try {
+    if (query.isEmpty) {
+      currentSearchResults = [];
+      menuResults = [];
+      restaurantResults = [];
       notifyListeners();
-    } catch (e) {
-      print('Error while searching: $e');
-      throw Exception('Failed to fetch search results');
+      return;
     }
+
+    final searchResults = await fetchSearchResults(query);
+
+    menuResults = searchResults['menu_items'] ?? [];
+    restaurantResults = searchResults['restaurants'] ?? [];
+
+    currentSearchResults = [...menuResults, ...restaurantResults];
+
+    notifyListeners();
+  } catch (e) {
+    print('Error while searching: $e');
+    throw Exception('Failed to fetch search results');
   }
+}
 
-  Future<Map<String, dynamic>> fetchSearchResults(String query) async {
-    const String baseUrl =
-        'https://broadway.icgedu.com/food/getbysearch/';
+Future<Map<String, dynamic>> fetchSearchResults(String query) async {
+  const String baseUrl = 'https://broadway.icgedu.com/food/getbysearch/';
 
-    try {
-      final url = Uri.parse(baseUrl);
+  try {
+    final url = Uri.parse(baseUrl);
 
-      final cookieString = await getCookieString(url);
+    final cookieString = await getCookieString(url);
 
-      final response = await _dio.post(
-        url.toString(),
-        data: jsonEncode({"Search": query}),
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-          },
-        ),
-      );
+    // Retrieve the Bearer token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      print('Search response status: ${response.statusCode}');
-      print('Search response data: ${response.data}');
+    final response = await _dio.post(
+      url.toString(),
+      data: jsonEncode({"Search": query}),
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token', // Add Bearer token here
+          'Accept': 'application/json',
+        },
+      ),
+    );
 
-      if (response.statusCode == 200) {
-        return {
-          'menu_items': response.data['menu_items'] ?? [],
-          'restaurants': response.data['restaurants'] ?? []
-        };
-      } else {
-        throw Exception('Failed to search menu and restaurants');
-      }
-    } catch (e) {
-      print('Error fetching search results: $e');
-      throw Exception('Failed to fetch search results');
+    print('Search response status: ${response.statusCode}');
+    print('Search response data: ${response.data}');
+
+    if (response.statusCode == 200) {
+      return {
+        'menu_items': response.data['menu_items'] ?? [],
+        'restaurants': response.data['restaurants'] ?? []
+      };
+    } else {
+      throw Exception('Failed to search menu and restaurants');
     }
+  } catch (e) {
+    print('Error fetching search results: $e');
+    throw Exception('Failed to fetch search results');
   }
+}
+
 
   ///category
   Future<void> fetchCategories() async {
-    try {
-      _isLoadingCategories = true;
-      _categoryError = '';
-      notifyListeners();
+  try {
+    _isLoadingCategories = true;
+    _categoryError = '';
+    notifyListeners();
 
-      await ensureCookieJarInitialized();
-      final url =
-          Uri.parse('https://broadway.icgedu.com/food/categories/');
-      final cookieString = await getCookieString(url);
+    await ensureCookieJarInitialized();
+    final url = Uri.parse('https://broadway.icgedu.com/food/categories/');
 
-      final response = await _dio.get(
-        url.toString(),
-        options: Options(
-          headers: {
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-          },
-        ),
-      );
+    final cookieString = await getCookieString(url);
 
-      if (response.statusCode == 200) {
-        if (response.data == null) {
-          throw Exception('Response data is null');
-        }
+    // Retrieve the Bearer token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-        final List<dynamic> categoriesJson = response.data;
-        _categories =
-            categoriesJson.map((json) => Category.fromJson(json)).toList();
-        _categoryError = '';
-      } else {
-        throw Exception(
-            'Failed to fetch categories. Status: ${response.statusCode}');
-      }
-    } catch (e) {
-      _categoryError = 'Failed to load categories: $e';
-      _categories = [];
-    } finally {
-      _isLoadingCategories = false;
-      notifyListeners();
-    }
-  }
-
-  ///with category id
-  Future<List<MenuItem>> getMenuItemsByCategory(int categoryId) async {
-    try {
-      final response = await _dio.get(
-        'https://broadway.icgedu.com/food/categories/$categoryId',
-      );
-
-      if (response.statusCode == 200) {
-        return (response.data as List)
-            .map((item) => MenuItem.fromJson(item))
-            .toList();
-      } else {
-        throw Exception('Failed to fetch menu items: ${response.statusCode}');
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// reviews
-  Future<void> fetchReviews(int restaurantId) async {
-    try {
-      await ensureCookieJarInitialized();
-
-      final url = 'https://broadway.icgedu.com/food/getreviews/$restaurantId';
-      final cookieString = await getCookieString(Uri.parse(url));
-
-      final response = await _dio.get(
-        url,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-          },
-          validateStatus: (status) => true,
-        ),
-      );
-
-      if (response.statusCode == 200 && response.data != null) {
-
-        _reviews = (response.data as List).map((json) => Review.fromJson(json)).toList();
-        _error = '';
-      } else {
-        _error = 'Failed to fetch reviews: ${response.data}';
-        _reviews = [];
-      }
-
-      notifyListeners();
-    } catch (e) {
-      _error = 'Error fetching reviews: $e';
-      _reviews = [];
-      notifyListeners();
-    }
-  }
-  ///fetch restaurants with id
-  Future<void> fetchRestaurantDetails(int restaurantId) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
-
-      final url = Uri.parse(
-          'https://broadway.icgedu.com/food/restaurants/$restaurantId');
-      final cookieString = await getCookieString(url);
-
-      final response = await _dio.get(
-        url.toString(),
-        options: Options(
-          headers: {
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> restaurantDetailsJson = response.data;
-        if (restaurantDetailsJson.isNotEmpty) {
-          _restaurantDetails = Restaurant.fromJson(restaurantDetailsJson[0]);
-          _isLoading = false;
-          notifyListeners();
-        } else {
-          throw Exception('No restaurant details found');
-        }
-      } else {
-        throw Exception('Failed to fetch restaurant details');
-      }
-    } catch (e) {
-      print('Error fetching restaurant details: $e');
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-  ///add review
-  Future<bool> addRestaurantReview({
-    required BuildContext context,
-    required int restaurantId,
-    required int rating,
-    String review = ''
-  })
-  async {
-    try {
-      await ensureCookieJarInitialized();
-
-      final url = 'https://broadway.icgedu.com/food/addreviews/$restaurantId';
-      final cookieString = await getCookieString(Uri.parse(url));
-
-      final response = await _dio.post(
-        url,
-        data: {
-          "Review": review.isNotEmpty ? review : 'Rating submitted',
-          "Rating": rating
+    final response = await _dio.get(
+      url.toString(),
+      options: Options(
+        headers: {
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token', // Add Bearer token here
+          'Accept': 'application/json',
         },
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-          },
-          validateStatus: (status) => true,
-        ),
-      );
+      ),
+    );
 
-      print('Add Review Response: ${response.data}');
-      print('Add Review Status Code: ${response.statusCode}');
-
-      if (response.statusCode == 200 &&
-          response.data['msg'] == 'Review submitted successfully') {
-
-        await fetchReviews(restaurantId);
-
-        return true;
-      } else {
-
-        final errorMsg = response.data['msg'] ?? 'Failed to submit review';
-        _showErrorDialog(context, errorMsg);
-        return false;
+    if (response.statusCode == 200) {
+      if (response.data == null) {
+        throw Exception('Response data is null');
       }
-    } catch (e) {
-      print('Error adding restaurant review: $e');
-      _showErrorDialog(context, 'An error occurred while submitting review');
+
+      final List<dynamic> categoriesJson = response.data;
+      _categories =
+          categoriesJson.map((json) => Category.fromJson(json)).toList();
+      _categoryError = '';
+    } else {
+      throw Exception(
+          'Failed to fetch categories. Status: ${response.statusCode}');
+    }
+  } catch (e) {
+    _categoryError = 'Failed to load categories: $e';
+    _categories = [];
+  } finally {
+    _isLoadingCategories = false;
+    notifyListeners();
+  }
+}
+
+
+ Future<List<MenuItem>> getMenuItemsByCategory(int categoryId) async {
+  try {
+    // Retrieve the Bearer token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
+
+    final response = await _dio.get(
+      'https://broadway.icgedu.com/food/categories/$categoryId',
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token', // Add Bearer token here
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      // Parse response data and return as a list of MenuItem objects
+      return (response.data as List)
+          .map((item) => MenuItem.fromJson(item))
+          .toList();
+    } else {
+      throw Exception('Failed to fetch menu items: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error fetching menu items: $e');
+    rethrow; // Re-throw the exception after logging the error
+  }
+}
+
+
+
+  Future<void> fetchReviews(int restaurantId) async {
+  try {
+    await ensureCookieJarInitialized();
+
+    final url = 'https://broadway.icgedu.com/food/getreviews/$restaurantId';
+    final cookieString = await getCookieString(Uri.parse(url));
+
+    // Retrieve token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
+
+    final response = await _dio.get(
+      url,
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token',
+        },
+        validateStatus: (status) => true,
+      ),
+    );
+
+    if (response.statusCode == 200 && response.data != null) {
+      // Parse reviews from the response
+      _reviews = (response.data as List)
+          .map((json) => Review.fromJson(json))
+          .toList();
+      _error = '';
+    } else {
+      _error = 'Failed to fetch reviews: ${response.data}';
+      _reviews = [];
+    }
+
+    notifyListeners();
+  } catch (e) {
+    _error = 'Error fetching reviews: $e';
+    _reviews = [];
+    notifyListeners();
+  }
+}
+
+
+  Future<void> fetchRestaurantDetails(int restaurantId) async {
+  try {
+    _isLoading = true;
+    notifyListeners();
+
+    final url = Uri.parse(
+        'https://broadway.icgedu.com/food/restaurants/$restaurantId');
+    final cookieString = await getCookieString(url); 
+
+    
+    final token = await SharedPreferencesHelper.getAuthToken();
+
+    final response = await _dio.get(
+      url.toString(),
+      options: Options(
+        headers: {
+          'Cookie': cookieString,
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        validateStatus: (status) => status! < 500,
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final restaurantDetailsJson = response.data;
+      if (restaurantDetailsJson is List && restaurantDetailsJson.isNotEmpty) {
+        _restaurantDetails = Restaurant.fromJson(restaurantDetailsJson[0]);
+      } else {
+        throw Exception('No restaurant details found');
+      }
+    } else {
+      throw Exception(
+          'Failed to fetch restaurant details, Status Code: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error fetching restaurant details: $e');
+    _restaurantDetails = null;
+  } finally {
+    _isLoading = false;
+    notifyListeners();
+  }
+}
+
+
+  Future<bool> addRestaurantReview({
+  required BuildContext context,
+  required int restaurantId,
+  required int rating,
+  String review = '',
+}) async {
+  try {
+    // Validate rating range
+    if (rating < 1 || rating > 5) {
+      _showErrorDialog(context, 'Please provide a valid rating between 1 and 5.');
       return false;
     }
+
+    // Ensure cookie jar is initialized
+    await ensureCookieJarInitialized();
+
+    // Define the URL for adding the review
+    final url = 'https://broadway.icgedu.com/food/addreviews/$restaurantId';
+
+    // Get the Bearer token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
+
+    // Get the cookie string for the request
+    final cookieString = await getCookieString(Uri.parse(url));
+
+    // Make the POST request with Bearer token and Cookie in headers
+    final response = await _dio.post(
+      url,
+      data: {
+        "Review": review.isNotEmpty ? review : 'Rating submitted',
+        "Rating": rating,
+      },
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+          'Authorization': 'Bearer $token', 
+        },
+        validateStatus: (status) => true,
+      ),
+    );
+
+    print('Add Review Response: ${response.data}');
+    print('Add Review Status Code: ${response.statusCode}');
+
+    // Handle response based on status code
+    if (response.statusCode == 200 &&
+        response.data['msg'] == 'Review submitted successfully') {
+      await fetchReviews(restaurantId);
+
+      _showSuccessDialogs(context, 'Thank you! Your review has been submitted.');
+      return true;
+    } else {
+
+      final errorMsg = response.data['msg'] ?? 'Failed to submit review';
+      _showErrorDialogs(context, errorMsg);
+      return false;
+    }
+  } catch (e) {
+
+    print('Error adding restaurant review: $e');
+    _showErrorDialog(
+      context,
+      'An unexpected error occurred. Please try again later.',
+    );
+    return false;
+  }
+}
+
+
+  void _showErrorDialogs(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Success', style: TextStyle(color: Colors.black)),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
-
+// Helper function to show success dialog
+  void _showSuccessDialogs(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Success', style: TextStyle(color: Colors.green)),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
 
   /// Fetch Restaurants
 
   Future<List<Restaurant>> fetchRestaurants(BuildContext context) async {
-    try {
-      await ensureCookieJarInitialized();
+  try {
+    // Ensure the cookie jar is initialized
+    await ensureCookieJarInitialized();
 
-      final url =
-          Uri.parse('https://broadway.icgedu.com/food/restaurants/');
-      final cookieString = await getCookieString(url);
+    // Define the URL for fetching the restaurants
+    final url = Uri.parse('https://broadway.icgedu.com/food/restaurants/');
 
-      print('Fetching restaurants...');
-      print('Request URL: $url');
-      print('Request Cookies: $cookieString');
+    // Get the Bearer token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      final response = await _dio.get(
-        url.toString(),
-        options: Options(
-          headers: {
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-          },
-        ),
-      );
+    // Get the cookie string for the request
+    final cookieString = await getCookieString(url);
 
-      print('Restaurants response status: ${response.statusCode}');
-      print('Restaurants response data: ${response.data}');
+    // Log the request details for debugging
+    print('Fetching restaurants...');
+    print('Request URL: $url');
+    print('Request Cookies: $cookieString');
 
-      if (response.statusCode == 200) {
-        final List<dynamic> restaurantsJson = response.data;
-        return restaurantsJson
-            .map((json) => Restaurant.fromJson(json))
-            .toList();
-      } else {
-        throw Exception('Failed to fetch restaurants');
-      }
-    } catch (e) {
-      print('Error fetching restaurants: $e');
+    // Make the GET request with Bearer token and Cookie in headers
+    final response = await _dio.get(
+      url.toString(),
+      options: Options(
+        headers: {
+          'Cookie': cookieString,
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token', 
+        },
+      ),
+    );
+
+    print('Restaurants response status: ${response.statusCode}');
+    print('Restaurants response data: ${response.data}');
+
+
+    if (response.statusCode == 200) {
+
+      final List<dynamic> restaurantsJson = response.data;
+      return restaurantsJson
+          .map((json) => Restaurant.fromJson(json))
+          .toList();
+    } else {
+
       throw Exception('Failed to fetch restaurants');
     }
+  } catch (e) {
+
+    print('Error fetching restaurants: $e');
+    throw Exception('Failed to fetch restaurants');
   }
+}
 
-  /// Best rest
+
   Future<List<BestSeller>> fetchBestSellers(BuildContext context) async {
-    try {
-      await ensureCookieJarInitialized();
+  try {
+    await ensureCookieJarInitialized();
 
-      final url =
-          Uri.parse('https://broadway.icgedu.com/food/bestsellers/');
-      final cookieString = await getCookieString(url);
+    final url = Uri.parse('https://broadway.icgedu.com/food/bestsellers/');
+    final cookieString = await getCookieString(url);
 
-      final response = await _dio.get(
-        url.toString(),
-        options: Options(
-          headers: {
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-          },
-        ),
-      );
+    // Retrieve token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = response.data;
-        final List<dynamic> bestSellersJson = data['Best sellers'];
-        return bestSellersJson
-            .map((json) => BestSeller.fromJson(json))
-            .toList();
-      } else {
-        throw Exception('Failed to fetch best sellers');
-      }
-    } catch (e) {
-      print('Error fetching best sellers: $e');
+    final response = await _dio.get(
+      url.toString(),
+      options: Options(
+        headers: {
+          'Cookie': cookieString,
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token', 
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = response.data;
+      final List<dynamic> bestSellersJson = data['Best sellers'];
+      return bestSellersJson
+          .map((json) => BestSeller.fromJson(json))
+          .toList();
+    } else {
       throw Exception('Failed to fetch best sellers');
     }
+  } catch (e) {
+    print('Error fetching best sellers: $e');
+    throw Exception('Failed to fetch best sellers');
   }
+}
 
-  /// Fetch Restaurant Menu
 
   Future<void> fetchRestaurantMenu(int restaurantId) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
+  try {
+    _isLoading = true;
+    notifyListeners();
 
-      final url = Uri.parse(
-          'https://broadway.icgedu.com/food/restaurantmenu/$restaurantId');
-      final cookieString = await getCookieString(url);
+    final url = Uri.parse(
+        'https://broadway.icgedu.com/food/restaurantmenu/$restaurantId');
+    final cookieString = await getCookieString(url);
 
-      final response = await _dio.get(
-        url.toString(),
-        options: Options(
-          headers: {
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-          },
-        ),
-      );
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      if (response.statusCode == 200) {
-        final menuData = response.data;
+    final response = await _dio.get(
+      url.toString(),
+      options: Options(
+        headers: {
+          'Cookie': cookieString,
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token', 
+        },
+      ),
+    );
 
-        final popularItemsJson = menuData['popularItems'] as List<dynamic>;
-        _popularItems =
-            popularItemsJson.map((json) => PopularItem.fromJson(json)).toList();
+    if (response.statusCode == 200) {
+      final menuData = response.data;
 
-        final categoriesJson = menuData['foodCategories'] as List<dynamic>;
-        _foodCategories =
-            categoriesJson.map((json) => FoodCategory.fromJson(json)).toList();
+  
+      final popularItemsJson = menuData['popularItems'] as List<dynamic>;
+      _popularItems =
+          popularItemsJson.map((json) => PopularItem.fromJson(json)).toList();
 
-        _isLoading = false;
-        notifyListeners();
-      } else {
-        throw Exception('Failed to fetch restaurant menu');
-      }
-    } catch (e) {
-      print('Error fetching restaurant menu: $e');
+   
+      final categoriesJson = menuData['foodCategories'] as List<dynamic>;
+      _foodCategories =
+          categoriesJson.map((json) => FoodCategory.fromJson(json)).toList();
+
       _isLoading = false;
       notifyListeners();
+    } else {
+      throw Exception('Failed to fetch restaurant menu, Status Code: ${response.statusCode}');
     }
+  } catch (e) {
+    print('Error fetching restaurant menu: $e');
+    _isLoading = false;
+    notifyListeners();
   }
+}
+
 
   ///fetch by price
   Future<List<Restaurant>> fetchMenuByPrice(int minPrice, int maxPrice) async {
-    try {
-      await ensureCookieJarInitialized();
+  try {
+  
+    await ensureCookieJarInitialized();
 
-      final url =
-          Uri.parse('https://broadway.icgedu.com/food/getbyprice/');
-      final cookieString = await getCookieString(url);
+ 
+    final url = Uri.parse('https://broadway.icgedu.com/food/getbyprice/');
 
-      final response = await _dio.post(
-        url.toString(),
-        data: jsonEncode({'Price': maxPrice}),
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-          },
-        ),
-      );
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      if (response.statusCode == 200) {
-        final List<dynamic> priceRangeFoodsJson = response.data;
-        return priceRangeFoodsJson
-            .map((json) => Restaurant.fromJson(json))
-            .toList();
-      } else {
-        throw Exception('Failed to fetch menu items by price');
-      }
-    } catch (e) {
-      print('Error fetching menu by price: $e');
-      rethrow;
+
+    final cookieString = await getCookieString(url);
+
+ 
+    final requestData = jsonEncode({
+      'Price': maxPrice,
+    });
+
+
+    final response = await _dio.post(
+      url.toString(),
+      data: requestData,
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieString,
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token', 
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+
+      final List<dynamic> priceRangeFoodsJson = response.data;
+      return priceRangeFoodsJson
+          .map((json) => Restaurant.fromJson(json))
+          .toList();
+    } else {
+
+      throw Exception('Failed to fetch menu items by price');
     }
+  } catch (e) {
+
+    print('Error fetching menu by price: $e');
+    rethrow;
   }
+}
+
 
   ///nearby
   Future<void> fetchNearbyRestaurants() async {
-    try {
-      _isLoading = true;
-      notifyListeners();
+  try {
+    _isLoading = true;
+    notifyListeners();
 
-      final url =
-          Uri.parse('https://broadway.icgedu.com/food/nearbysearch/');
-      final cookieString = await getCookieString(url);
+    final url = Uri.parse('https://broadway.icgedu.com/food/nearbysearch/');
+    
+    // Retrieve token from SharedPreferences
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      final response = await _dio.get(
-        url.toString(),
-        options: Options(
-          headers: {
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-          },
-        ),
-      );
+    final response = await _dio.get(
+      url.toString(),
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token', 
+          'Cookie': await getCookieString(url), 
+          'Accept': 'application/json',
+        },
+      ),
+    );
 
-      if (response.statusCode == 200) {
-        // Directly parse the response data as a list when it starts with [ ]
-        final List<dynamic> nearbyRestaurantsJson = response.data;
+    if (response.statusCode == 200) {
+      final List<dynamic> nearbyRestaurantsJson = response.data;
 
-        _nearbyRestaurants = nearbyRestaurantsJson
-            .map((json) => NearbyRestaurant.fromJson(json))
-            .toList();
-      } else {
-        throw Exception('Failed to fetch nearby restaurants');
-      }
-    } catch (e) {
-      print('Error fetching nearby restaurants: $e');
-      _nearbyRestaurants = [];
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      _nearbyRestaurants = nearbyRestaurantsJson
+          .map((json) => NearbyRestaurant.fromJson(json))
+          .toList();
+    } else {
+      throw Exception('Failed to fetch nearby restaurants');
     }
+  } catch (e) {
+    print('Error fetching nearby restaurants: $e');
+    _nearbyRestaurants = [];
+  } finally {
+    _isLoading = false;
+    notifyListeners();
   }
+}
+
+
   ///recommended
   Future<void> fetchRecommendedRestaurants() async {
-    try {
-      isLoadingRecommended = true;
-      notifyListeners();
+  try {
+    isLoadingRecommended = true;
+    notifyListeners();
 
-      final url = Uri.parse('https://broadway.icgedu.com/food/recommended/');
-      final cookieString = await getCookieString(url);
+    final url = Uri.parse('https://broadway.icgedu.com/food/recommended/');
 
-      final response = await _dio.get(
-        url.toString(),
-        options: Options(
-          headers: {
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-          },
-        ),
-      );
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      if (response.statusCode == 200) {
-        // Check if response.data is a Map and contains 'Recommended Items'
-        final List<dynamic> recommendedRestaurantsJson =
-        response.data is Map
-            ? (response.data['Recommended Items'] ?? [])
-            : response.data ?? [];
 
-        recommendedRestaurants = recommendedRestaurantsJson
-            .map((json) => RestaurantModel.fromJson(json))
-            .toList();
-      } else {
-        throw Exception('Failed to fetch recommended restaurants');
-      }
-    } catch (e) {
-      print('Error fetching recommended restaurants: $e');
-      recommendedRestaurants = [];
-    } finally {
-      isLoadingRecommended = false;
-      notifyListeners();
+    final cookieString = await getCookieString(url);
+
+
+    final response = await _dio.get(
+      url.toString(),
+      options: Options(
+        headers: {
+          'Cookie': cookieString,
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token', 
+        },
+      ),
+    );
+
+
+    if (response.statusCode == 200) {
+
+      final List<dynamic> recommendedRestaurantsJson = response.data is Map
+          ? (response.data['Recommended Items'] ?? [])
+          : response.data ?? [];
+
+
+      recommendedRestaurants = recommendedRestaurantsJson
+          .map((json) => RestaurantModel.fromJson(json))
+          .toList();
+    } else {
+      throw Exception('Failed to fetch recommended restaurants');
     }
+  } catch (e) {
+    print('Error fetching recommended restaurants: $e');
+    recommendedRestaurants = [];
+  } finally {
+
+    isLoadingRecommended = false;
+    notifyListeners();
   }
+}
+
+
   ///popular
   Future<void> fetchMostPopularRestaurants() async {
-    try {
-      isLoadingMostPopular = true;
-      notifyListeners();
+  try {
+  
+    isLoadingMostPopular = true;
+    notifyListeners();
 
-      final url = Uri.parse('https://broadway.icgedu.com/food/mostpopular/');
-      final cookieString = await getCookieString(url);
+  
+    final url = Uri.parse('https://broadway.icgedu.com/food/mostpopular/');
 
-      final response = await _dio.get(
-        url.toString(),
-        options: Options(
-          headers: {
-            'Cookie': cookieString,
-            'Accept': 'application/json',
-          },
-        ),
-      );
+    final token = await SharedPreferencesHelper.getAuthToken();
 
-      if (response.statusCode == 200) {
-        // Check if response.data is a Map and contains 'Most Popular Items'
-        final List<dynamic> mostPopularRestaurantsJson =
-        response.data is Map
-            ? (response.data['Most Popular Items'] ?? [])
-            : response.data ?? [];
+    final cookieString = await getCookieString(url);
 
-        mostPopularRestaurants = mostPopularRestaurantsJson
-            .map((json) => RestaurantModel.fromJson(json))
-            .toList();
-      } else {
-        throw Exception('Failed to fetch most popular restaurants');
-      }
-    } catch (e) {
-      print('Error fetching most popular restaurants: $e');
-      mostPopularRestaurants = [];
-    } finally {
-      isLoadingMostPopular = false;
-      notifyListeners();
+
+    final response = await _dio.get(
+      url.toString(),
+      options: Options(
+        headers: {
+          'Cookie': cookieString,
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token', 
+        },
+      ),
+    );
+
+    if (response.statusCode == 200) {
+
+      final List<dynamic> mostPopularRestaurantsJson = response.data is Map
+          ? (response.data['Most Popular Items'] ?? [])
+          : response.data ?? [];
+      mostPopularRestaurants = mostPopularRestaurantsJson
+          .map((json) => RestaurantModel.fromJson(json))
+          .toList();
+    } else {
+      throw Exception('Failed to fetch most popular restaurants');
     }
+  } catch (e) {
+    print('Error fetching most popular restaurants: $e');
+    mostPopularRestaurants = [];
+  } finally {
+
+    isLoadingMostPopular = false;
+    notifyListeners();
   }
+}
 
 
   /// Logout method
-  Future<void> logout() async {
-    await ensureCookieJarInitialized();
-    print('Logging out...');
-    await _cookieJar?.deleteAll();
-    emailController.clear();
-    passwordController.clear();
-    notifyListeners();
-    print('Logged out and cookies cleared');
-  }
-
-
-
-
-
+  // Future<void> logout() async {
+  //   await ensureCookieJarInitialized();
+  //   print('Logging out...');
+  //   await _cookieJar?.deleteAll();
+  //   emailController.clear();
+  //   passwordController.clear();
+  //   notifyListeners();
+  //   print('Logged out and cookies cleared');
+  // }
 
   /// Show error dialog with a custom message
   void _showErrorDialog(BuildContext context, String message) {
@@ -1820,7 +2171,6 @@ class MainProvider extends ChangeNotifier {
 
 ///FORGOT PASSWORD
 
-
 class ForgotPasswordProvider extends ChangeNotifier {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController otpController = TextEditingController();
@@ -1844,7 +2194,8 @@ class ForgotPasswordProvider extends ChangeNotifier {
         headers: {'Content-Type': 'application/json'},
       );
 
-      if (response.headers['content-type']?.contains('application/json') == true) {
+      if (response.headers['content-type']?.contains('application/json') ==
+          true) {
         final data = jsonDecode(response.body);
         print('Forgot password API response: $data');
 
@@ -1906,11 +2257,12 @@ class ForgotPasswordProvider extends ChangeNotifier {
         headers: {'Content-Type': 'application/json'},
       );
 
-      if (response.headers['content-type']?.contains('application/json') == true) {
+      if (response.headers['content-type']?.contains('application/json') ==
+          true) {
         final data = jsonDecode(response.body);
         print('OTP Verification API response: $data');
 
-        if (response.statusCode == 200 ) {
+        if (response.statusCode == 200) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('OTP verified successfully'),
@@ -1921,8 +2273,8 @@ class ForgotPasswordProvider extends ChangeNotifier {
           // Navigate to Change Password Screen
           Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ChangePasswordScreen())
-          );
+              MaterialPageRoute(
+                  builder: (context) => const ChangePasswordScreen()));
 
           return true;
         } else {

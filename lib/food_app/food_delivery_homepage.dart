@@ -1,14 +1,9 @@
-
 import 'dart:math';
 import 'dart:ui';
-import 'package:broadway/food_app/confirm_order_page.dart';
 import 'package:broadway/food_app/nearby.dart';
-import 'package:broadway/food_app/order_history%20page.dart';
 import 'package:broadway/food_app/popular_restaurants.dart';
 import 'package:broadway/food_app/recommended_restaurants.dart';
 import 'package:broadway/food_app/restaurant_model.dart';
-import 'package:broadway/profile/set_profile.dart';
-import 'package:broadway/profile/view_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providerss/app_provider.dart';
@@ -16,7 +11,7 @@ import 'appbar.dart';
 import 'best_partners_page.dart';
 import 'category.dart';
 import 'food_details_page.dart';
-import 'food_provider.dart';
+
 
 class FoodDeliveryHomePage extends StatelessWidget {
   const FoodDeliveryHomePage({super.key});
@@ -63,7 +58,7 @@ class FoodDeliveryHomePage extends StatelessWidget {
             height: 475,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: Color(0xffD9E4FF), // Very light blue with opacity
+              color: Color(0xffD9E4FF), 
             ),
           ),
         ),
@@ -71,7 +66,7 @@ class FoodDeliveryHomePage extends StatelessWidget {
           top: -20,
           right: -10,
           child: Transform.rotate(
-            angle: 1 * (pi / 180), // Rotate by 45 degrees (in radians)
+            angle: 1 * (pi / 180),
             child: Image.asset('Assets/bubble 2.png'),
           ),
         )

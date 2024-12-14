@@ -570,6 +570,29 @@ class RestaurantModel {
   }
 }
 
+// class Review {
+//   final int id;
+//   final String customerName;
+//   final String review;
+//   final int rating;
+
+//   Review({
+//     required this.id,
+//     required this.customerName,
+//     required this.review,
+//     required this.rating,
+//   });
+
+//   factory Review.fromJson(Map<String, dynamic> json) {
+//     return Review(
+//       id: json['id'],
+//       customerName: json['Customer_Name'],
+//       review: json['Review'],
+//       rating: json['Rating'],
+//     );
+//   }
+// }
+
 class Review {
   final int id;
   final String customerName;
@@ -583,12 +606,22 @@ class Review {
     required this.rating,
   });
 
+  
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
-      id: json['id'],
-      customerName: json['Customer_Name'],
-      review: json['Review'],
-      rating: json['Rating'],
+      id: json['id'] ?? 0,  
+      customerName: json['Customer_Name'] ?? 'Unknown', 
+      review: json['Review'] ?? '',  
+      rating: json['Rating'] ?? 0,  
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'Customer_Name': customerName,
+      'Review': review,
+      'Rating': rating,
+    };
   }
 }
