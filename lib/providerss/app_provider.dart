@@ -319,6 +319,9 @@ class MainProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+  void setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();}
 
 
   Future<void> removeCartItem(int cartItemId) async {

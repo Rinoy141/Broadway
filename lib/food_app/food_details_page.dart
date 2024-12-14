@@ -20,12 +20,15 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = context.read<MainProvider>();
-      provider.fetchRestaurantDetails(widget.restaurantId);
-      provider.fetchRestaurantMenu(widget.restaurantId);
-      provider.fetchReviews(widget.restaurantId);
-    });
+      provider.setLoading(true);
+      await Future.delayed(Duration(seconds: 1));
+      await provider.fetchRestaurantDetails(widget.restaurantId);
+      await provider.fetchRestaurantMenu(widget.restaurantId);
+      await provider.fetchReviews(widget.restaurantId);
+      provider.setLoading(false);
+      });
   }
 
   @override
