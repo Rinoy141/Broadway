@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 class ProfileSetupProvider extends ChangeNotifier {
   File? _profileImage;
   File? _idImage;
+  bool _loading = false;
 
   final TextEditingController addressController = TextEditingController();
   final TextEditingController countryController = TextEditingController();
@@ -15,6 +16,13 @@ class ProfileSetupProvider extends ChangeNotifier {
   // Getters for images
   File? get profileImage => _profileImage;
   File? get idImage => _idImage;
+  bool get loading => _loading;
+
+  // Set loading state
+  void setLoading(bool value) {
+    _loading = value;
+    notifyListeners();
+  }
 
   // Method to pick image
   Future<void> pickImage(bool isProfilePic) async {

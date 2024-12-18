@@ -304,9 +304,22 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
     );
   }
 
+  // @override
+  // void dispose() {
+  //   Provider.of<ProfileViewProvider>(context, listen: false).disposeControllers();
+  //   super.dispose();
+  // }
+
   @override
-  void dispose() {
-    Provider.of<ProfileViewProvider>(context, listen: false).disposeControllers();
-    super.dispose();
+void dispose() {
+  try {
+    final profileProvider = Provider.of<ProfileViewProvider>(context, listen: false);
+    profileProvider.disposeControllers();
+  } catch (e) {
+    // Log or handle the error gracefully
+    debugPrint('Error disposing ProfileViewProvider: $e');
   }
+  super.dispose();
+}
+
 }

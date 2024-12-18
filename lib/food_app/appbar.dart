@@ -1,8 +1,9 @@
 import 'package:broadway/food_app/search_br.dart';
+import 'package:broadway/profile/set_profile.dart';
+import 'package:broadway/profile/view_profile.dart';
 import 'package:broadway/providerss/app_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 
 class CustomAppBarContent extends StatelessWidget {
   const CustomAppBarContent({super.key});
@@ -73,21 +74,46 @@ class CustomAppBarContent extends StatelessWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.location_on, size: 16, color: Colors.blue),
-                const SizedBox(width: 4),
-                const Text('Delivery to', style: TextStyle(color: Colors.blue)),
-                const SizedBox(width: 4),
-                Text(
-                  provider.userProfile != null
-                      ? '${provider.userProfile!.place}'
-                      : 'Loading...',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.blue),
-                ),
-              ],
-            ),
+            // Row(
+            //   children: [
+            //     const Icon(Icons.location_on, size: 16, color: Colors.blue),
+            //     const SizedBox(width: 4),
+            //     const Text('Delivery to', style: TextStyle(color: Colors.blue)),
+            //     const SizedBox(width: 4),
+            //     Text(
+            //       provider.userProfile != null
+            //           ? '${provider.userProfile!.place}'
+            //           : 'Loading...',
+            //       style: const TextStyle(
+            //           fontWeight: FontWeight.bold, color: Colors.blue),
+            //     ),
+            //   ],
+            // ),
+
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfileViewPage()),
+                );
+              },
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on, size: 16, color: Colors.blue),
+                  const SizedBox(width: 4),
+                  const Text('Delivery to',
+                      style: TextStyle(color: Colors.blue)),
+                  const SizedBox(width: 4),
+                  Text(
+                    provider.userProfile != null
+                        ? '${provider.userProfile!.place}'
+                        : 'Loading...',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: Colors.blue),
+                  ),
+                ],
+              ),
+            )
           ],
         );
       },

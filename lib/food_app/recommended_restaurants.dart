@@ -14,7 +14,7 @@
 
 //   @override
 //   void initState() {
-//     super.initState();  
+//     super.initState();
 //     WidgetsBinding.instance.addPostFrameCallback((_) {
 //       _fetchRecommendedRestaurantsIfNeeded();
 //     });
@@ -30,7 +30,6 @@
 //       });
 //     }
 //   }
-  
 
 //   @override
 //   Widget build(BuildContext context) {
@@ -198,7 +197,6 @@
 //   }
 // }
 
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -208,11 +206,12 @@ import 'food_details_page.dart';
 class RecommendedRestaurantsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-
     final loginProvider = Provider.of<MainProvider>(context, listen: false);
-    if (loginProvider.recommendedRestaurants.isEmpty) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (loginProvider.recommendedRestaurants.isEmpty) {
       loginProvider.fetchRecommendedRestaurants();
     }
+    });
 
     return Consumer<MainProvider>(
       builder: (context, mainProvider, _) {
@@ -238,7 +237,8 @@ class RecommendedRestaurantsWidget extends StatelessWidget {
                   children: [
                     const Text(
                       'Recommended Restaurants',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -253,7 +253,8 @@ class RecommendedRestaurantsWidget extends StatelessWidget {
                     scrollDirection: Axis.vertical,
                     itemCount: mainProvider.recommendedRestaurants.length,
                     itemBuilder: (context, index) {
-                      final restaurant = mainProvider.recommendedRestaurants[index];
+                      final restaurant =
+                          mainProvider.recommendedRestaurants[index];
 
                       return Material(
                         color: Colors.transparent,
@@ -262,7 +263,8 @@ class RecommendedRestaurantsWidget extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => RestaurantDetailsPage(restaurantId: restaurant.id),
+                                builder: (context) => RestaurantDetailsPage(
+                                    restaurantId: restaurant.id),
                               ),
                             );
                           },
@@ -283,7 +285,8 @@ class RecommendedRestaurantsWidget extends StatelessWidget {
                                               height: 120,
                                               width: double.infinity,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) {
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
                                                 return Image.asset(
                                                   'Assets/images/Grocery Store.png',
                                                   height: 120,
@@ -303,12 +306,14 @@ class RecommendedRestaurantsWidget extends StatelessWidget {
                                       top: 8,
                                       right: 8,
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
                                           color: restaurant.status == 'Open'
                                               ? Colors.green.withOpacity(0.8)
                                               : Colors.red.withOpacity(0.8),
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
                                         ),
                                         child: Text(
                                           restaurant.status,

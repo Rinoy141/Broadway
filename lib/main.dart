@@ -2,8 +2,8 @@ import 'package:broadway/common/sharedpref/shared_pref.dart';
 import 'package:broadway/food_app/state%20providers/payment_provider.dart';
 import 'package:broadway/food_app/state%20providers/profile_provider.dart';
 import 'package:broadway/food_app/state%20providers/rating_provider.dart';
+import 'package:broadway/food_app/state%20providers/set_profile_provider.dart';
 import 'package:broadway/login/app_selection.dart';
-import 'package:broadway/onbrding_screen/onbrding_provider.dart';
 import 'package:broadway/onbrding_screen/onbrding_screen.dart';
 import 'package:broadway/providerss/app_provider.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +19,7 @@ void main() async{
     providers: [
       ChangeNotifierProvider(create: (context) => MainProvider()),
       ChangeNotifierProvider(create: (context) => ProfileViewProvider()),
+      ChangeNotifierProvider(create: (context) => ProfileSetupProvider()),
       ChangeNotifierProvider(create: (context) => PaymentMethodProvider()),
       ChangeNotifierProvider(create: (context) => RatingProvider()),
 
@@ -30,6 +31,7 @@ void main() async{
 }
 
 class MyApp extends StatelessWidget {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   final String? userId;
    const MyApp({super.key, this.userId});
 
@@ -41,6 +43,7 @@ class MyApp extends StatelessWidget {
       builder: (context, mainProvider, child) {
         //print('Building MyApp with hasSeenOnboarding: ${mainProvider.hasSeenOnboarding}');
         return MaterialApp(
+          navigatorKey: navigatorKey,
             debugShowCheckedModeBanner: false, 
             // home:
             //  mainProvider.hasSeenOnboarding ?  LoginPage() :  OnboardingScreen()

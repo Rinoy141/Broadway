@@ -7,7 +7,6 @@
 // import 'package:provider/bottomnav_provider.dart';
 // import '../providerss/app_provider.dart';
 
-
 // class ProfileScreen extends StatelessWidget {
 //   @override
 //   Widget build(BuildContext context) {
@@ -100,12 +99,10 @@
 //   }
 // }
 
-
 import 'package:broadway/food_app/confirm_order_page.dart';
 import 'package:broadway/food_app/order_history%20page.dart';
 import 'package:broadway/food_app/restaurant_model.dart';
 import 'package:broadway/login/loginpage.dart';
-import 'package:broadway/onbrding_screen/onbrding_screen.dart';
 import 'package:broadway/profile/notficiation.dart';
 import 'package:broadway/profile/view_profile.dart';
 import 'package:broadway/providerss/app_provider.dart';
@@ -116,66 +113,64 @@ import 'package:dio/dio.dart';
 
 class ProfileScreen extends StatelessWidget {
   Future<bool> logout(BuildContext context) async {
-  const String url = 'http://broadway.icgedu.com/user/logout/';
-  Dio _dio = Dio();
+    const String url = 'http://broadway.icgedu.com/user/logout/';
+    Dio _dio = Dio();
 
-  try {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? cookieString = prefs.getString('cookieString');
-    print('Cookies before logout: $cookieString');
+    try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final String? cookieString = prefs.getString('cookieString');
+      print('Cookies before logout: $cookieString');
 
-    final response = await _dio.post(
-      url,
-      options: Options(
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': cookieString ?? '',
-        },
-      ),
-    );
+      final response = await _dio.post(
+        url,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieString ?? '',
+          },
+        ),
+      );
 
-    print('Logout response status: ${response.statusCode}');
-    print('Logout response data: ${response.data}');
+      print('Logout response status: ${response.statusCode}');
+      print('Logout response data: ${response.data}');
 
-    if (response.statusCode == 200 && response.data['detail'] == 'Successfully logged out.') {
-      print('Logout successful: ${response.data['detail']}');
+      if (response.statusCode == 200 &&
+          response.data['detail'] == 'Successfully logged out.') {
+        print('Logout successful: ${response.data['detail']}');
 
-      await prefs.clear();
-      print('SharedPreferences cleared.');
+        await prefs.clear();
+        print('SharedPreferences cleared.');
+        if (context.mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => LoginPage()),
+          );
 
-      // Ensure navigation happens only after logout is complete
-      if (context.mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => LoginPage()),
-        );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Successfully logged out.')),
+          );
+        }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Successfully logged out.')),
-        );
+        return true;
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(response.data['detail'] ?? 'Failed to log out.')),
+          );
+        }
+        return false;
       }
-
-      return true;
-    } else {
+    } catch (e) {
+      print('Error during logout: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.data['detail'] ?? 'Failed to log out.')),
+          const SnackBar(content: Text('An error occurred. Please try again.')),
         );
       }
       return false;
     }
-  } catch (e) {
-    print('Error during logout: $e');
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('An error occurred. Please try again.')),
-      );
-    }
-    return false;
   }
-}
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -205,8 +200,8 @@ class ProfileScreen extends StatelessWidget {
             title: Text('My Orders'),
             onTap: () {
               Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => OrderHistoryPage()),
+                context,
+                MaterialPageRoute(builder: (context) => OrderHistoryPage()),
               );
             },
           ),
@@ -214,8 +209,8 @@ class ProfileScreen extends StatelessWidget {
             title: Text('My Wishlist'),
             onTap: () {
               Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => CartPage()),
+                context,
+                MaterialPageRoute(builder: (context) => CartPage()),
               );
             },
           ),
@@ -234,38 +229,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
-
-// class UserInfoHeader extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Padding(
-//       padding: const EdgeInsets.all(16.0),
-//       child: Row(
-//         children: [
-//           CircleAvatar(
-//             radius: 30,
-//             backgroundImage: NetworkImage('https://example.com/placeholder.jpg'),
-//           ),
-//           SizedBox(width: 16),
-//           Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               Text(
-//                 'Amal John',
-//                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-//               ),
-//               Text(
-//                 '01XXXXXXXXXXXX',
-//                 style: TextStyle(color: Colors.grey),
-//               ),
-//             ],
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
 
 class UserInfoHeader extends StatefulWidget {
   @override
@@ -286,7 +249,6 @@ class _UserInfoHeaderState extends State<UserInfoHeader> {
   Widget build(BuildContext context) {
     return Consumer<MainProvider>(
       builder: (context, provider, child) {
-
         ProfileModel? userProfile = provider.userProfile;
 
         return Padding(
@@ -298,9 +260,7 @@ class _UserInfoHeaderState extends State<UserInfoHeader> {
                 backgroundImage: userProfile?.profilePic != null
                     ? NetworkImage(userProfile!.profilePic!)
                     : AssetImage('Assets/images/image 4.png'),
-                child: userProfile == null
-                    ? CircularProgressIndicator()
-                    : null,
+                child: userProfile == null ? CircularProgressIndicator() : null,
               ),
               SizedBox(width: 16),
               Column(

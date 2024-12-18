@@ -72,23 +72,46 @@ class Restaurant {
     );
   }
 
+  // factory Restaurant.fromJson(Map<String, dynamic> json) {
+  //   return Restaurant(
+  //     id: json['id'],
+  //     restaurantName: json['Restaurant_Name'],
+  //     district: json['District'],
+  //     place: json['Place'],
+  //     averageRating: json['average_rating'],
+  //     openingTime: json['Opening_time'],
+  //     closingTime: json['Closing_time'],
+  //     distance: json['distance'],
+  //     deliveryFee: json['deliveryfee'],
+  //     promoCodes: (json['promocode'] as List)
+  //         .map((promoJson) => PromoCode.fromJson(promoJson))
+  //         .toList(),
+  //     imageUrl: json['image_url'],
+  //   );
+  // }
+
   factory Restaurant.fromJson(Map<String, dynamic> json) {
-    return Restaurant(
-      id: json['id'],
-      restaurantName: json['Restaurant_Name'],
-      district: json['District'],
-      place: json['Place'],
-      averageRating: json['average_rating'],
-      openingTime: json['Opening_time'],
-      closingTime: json['Closing_time'],
-      distance: json['distance'],
-      deliveryFee: json['deliveryfee'],
-      promoCodes: (json['promocode'] as List)
-          .map((promoJson) => PromoCode.fromJson(promoJson))
-          .toList(),
-      imageUrl: json['image_url'],
-    );
-  }
+  return Restaurant(
+    id: json['id'],
+    restaurantName: json['Restaurant_Name'],
+    district: json['District'],
+    place: json['Place'],
+    averageRating: (json['average_rating'] != null)
+        ? (json['average_rating'] is int
+            ? (json['average_rating'] as int).toDouble()
+            : json['average_rating'] as double)
+        : null,
+    openingTime: json['Opening_time'],
+    closingTime: json['Closing_time'],
+    distance: json['distance'],
+    deliveryFee: json['deliveryfee'],
+    promoCodes: (json['promocode'] as List)
+        .map((promoJson) => PromoCode.fromJson(promoJson))
+        .toList(),
+    imageUrl: json['image_url'],
+  );
+}
+
 }
 class PromoCode {
   final String code;
@@ -333,30 +356,75 @@ class MenuItem {
 
   MenuItem({
     required this.id,
+    required this.restaurantId,
     required this.name,
     required this.description,
     required this.price,
     required this.imageUrl,
-    required this.restaurantId,
   });
 
   factory MenuItem.fromJson(Map<String, dynamic> json) {
     return MenuItem(
-      id: json['id'],
-      restaurantId: json['Restaurant'],
-      name: json['Item'],
-      description: json['Description'],
-      price: json['Price'],
-      imageUrl: json['Image'],
+      id: json['id'] ?? 0,
+      restaurantId: json['Restaurant'] ?? 0,
+      name: json['Item'] ?? '',
+      description: json['Description'] ?? '',
+      price: (json['Price'] as num?)?.toDouble() ?? 0.0,
+      imageUrl: json['Image'] ?? '',
     );
   }
 }
+
+
+// class CartItem {
+//   final int id;
+//   final MenuItems menuItems;
+//   final String itemName;
+//    int quantity;
+//   final double price;
+//   final double totalPrice;
+//   final double deliveryCharge;
+//   final double offerPrice;
+//   final int restaurantId;
+//   final int customerId;
+//   final int menuItemId;
+
+//   CartItem({
+//     required this.id,
+//     required this.menuItems,
+//     required this.itemName,
+//     required this.quantity,
+//     required this.price,
+//     required this.totalPrice,
+//     required this.deliveryCharge,
+//     required this.offerPrice,
+//     required this.restaurantId,
+//     required this.customerId,
+//     required this.menuItemId,
+//   });
+
+//   factory CartItem.fromJson(Map<String, dynamic> json) {
+//     return CartItem(
+//       id: json['id'],
+//       menuItems: MenuItems.fromJson(json['Menuitem']),
+//       itemName: json['Item_name'],
+//       quantity: json['Quantity'],
+//       price: (json['Price'] as num).toDouble(),
+//       totalPrice: (json['TotalPrice'] as num).toDouble(),
+//       deliveryCharge: (json['DeliveryCharge'] as num).toDouble(),
+//       offerPrice: (json['Offer_Price'] as num).toDouble(),
+//       restaurantId: json['Restaurant_id'],
+//       customerId: json['Customer_id'],
+//       menuItemId: json['Menuitem_id'],
+//     );
+//   }
+// }
 
 class CartItem {
   final int id;
   final MenuItems menuItems;
   final String itemName;
-   int quantity;
+  int quantity; // This is mutable for quantity updates
   final double price;
   final double totalPrice;
   final double deliveryCharge;
@@ -381,20 +449,21 @@ class CartItem {
 
   factory CartItem.fromJson(Map<String, dynamic> json) {
     return CartItem(
-      id: json['id'],
-      menuItems: MenuItems.fromJson(json['Menuitem']),
-      itemName: json['Item_name'],
-      quantity: json['Quantity'],
-      price: (json['Price'] as num).toDouble(),
-      totalPrice: (json['TotalPrice'] as num).toDouble(),
-      deliveryCharge: (json['DeliveryCharge'] as num).toDouble(),
-      offerPrice: (json['Offer_Price'] as num).toDouble(),
-      restaurantId: json['Restaurant_id'],
-      customerId: json['Customer_id'],
-      menuItemId: json['Menuitem_id'],
+      id: json['id'] ?? 0,
+      menuItems: MenuItems.fromJson(json['Menuitem'] ?? {}),
+      itemName: json['Item_name'] ?? '',
+      quantity: json['Quantity'] ?? 1,
+      price: (json['Price'] as num?)?.toDouble() ?? 0.0,
+      totalPrice: (json['TotalPrice'] as num?)?.toDouble() ?? 0.0,
+      deliveryCharge: (json['DeliveryCharge'] as num?)?.toDouble() ?? 0.0,
+      offerPrice: (json['Offer_Price'] as num?)?.toDouble() ?? 0.0,
+      restaurantId: json['Restaurant_id'] ?? 0,
+      customerId: json['Customer_id'] ?? 0,
+      menuItemId: json['Menuitem_id'] ?? 0,
     );
   }
 }
+
 
 class MenuItems {
   final String image;
@@ -403,10 +472,11 @@ class MenuItems {
 
   factory MenuItems.fromJson(Map<String, dynamic> json) {
     return MenuItems(
-      image: json['Image'],
+      image: json['Image'] ?? '',
     );
   }
 }
+
 
 class ProfileModel {
   final String username;
