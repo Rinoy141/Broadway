@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    return Consumer<MainProvider>(
+    return Consumer<MainProvider>(git
       builder: (context, mainProvider, child) {
         //print('Building MyApp with hasSeenOnboarding: ${mainProvider.hasSeenOnboarding}');
         return MaterialApp(
