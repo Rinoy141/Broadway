@@ -1,5 +1,7 @@
 
+import 'package:broadway/Job/job_search.dart';
 import 'package:broadway/food_app/main_page.dart';
+import 'package:broadway/hospital_app/hospital.dart';
 import 'package:flutter/material.dart';
 
 class AppSelection extends StatelessWidget {
@@ -48,9 +50,19 @@ class AppSelection extends StatelessWidget {
                     },context
                   ),
                   _buildCategoryItem(
-                      'Jobs', Icons.work, () => print('Jobs tapped'),context),
-                  _buildCategoryItem('Doctors', Icons.local_hospital,
-                      () => print('Doctors tapped'),context),
+                      'Jobs', Icons.work, () =>Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => JobSearch(),
+                          )),context),
+                  _buildCategoryItem('Doctors', Icons.local_hospital, 
+                      () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MedicalApp(),
+                          ));
+                      },context),
                   _buildCategoryItem('Buy & Sell', Icons.shopping_bag,
                       () => print('Buy & Sell tapped'),context),
                 ],

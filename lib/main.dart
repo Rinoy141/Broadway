@@ -6,51 +6,59 @@ import 'package:broadway/food_app/state%20providers/set_profile_provider.dart';
 import 'package:broadway/login/app_selection.dart';
 import 'package:broadway/onbrding_screen/onbrding_screen.dart';
 import 'package:broadway/providerss/app_provider.dart';
+import 'package:broadway/providerss/job_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+// ignore: prefer_typing_uninitialized_variables
+var w;
+// ignore: prefer_typing_uninitialized_variables
+var h;
 
-
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final userId = await SharedPreferencesHelper.getUserId();
-  runApp(
-    MultiProvider(
+  runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (context) => MainProvider()),
       ChangeNotifierProvider(create: (context) => ProfileViewProvider()),
       ChangeNotifierProvider(create: (context) => ProfileSetupProvider()),
       ChangeNotifierProvider(create: (context) => PaymentMethodProvider()),
       ChangeNotifierProvider(create: (context) => RatingProvider()),
-
-
+      ChangeNotifierProvider(create: (context) => JobProvider()),
     ],
-    child:  MyApp(userId: userId,),
-  )
-  );
+    child: MyApp(
+      userId: userId,
+    ),
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
   final String? userId;
-   const MyApp({super.key, this.userId});
-
+  const MyApp({super.key, this.userId});
 
   @override
   Widget build(BuildContext context) {
+    h = MediaQuery.of(context).size.height;
+    w = MediaQuery.of(context).size.width;
 
     return Consumer<MainProvider>(
       builder: (context, mainProvider, child) {
         //print('Building MyApp with hasSeenOnboarding: ${mainProvider.hasSeenOnboarding}');
         return MaterialApp(
           navigatorKey: navigatorKey,
-            debugShowCheckedModeBanner: false, 
-            // home:
-            //  mainProvider.hasSeenOnboarding ?  LoginPage() :  OnboardingScreen()
-            home: userId != null ? AppSelection(userId: userId!,) : OnboardingScreen(),
-            //home: mainProvider.isLoading ? AppSelection() : mainProvider.hasSeenOnboarding ? LoginPage() : OnboardingScreen(),
-             );
-
+          debugShowCheckedModeBanner: false,
+          // home:
+          //  mainProvider.hasSeenOnboarding ?  LoginPage() :  OnboardingScreen()
+          home: userId != null
+              ? AppSelection(
+                  userId: userId!,
+                )
+              : OnboardingScreen(),
+          //home: mainProvider.isLoading ? AppSelection() : mainProvider.hasSeenOnboarding ? LoginPage() : OnboardingScreen(),
+        );
       },
     );
   }

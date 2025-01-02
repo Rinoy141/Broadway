@@ -28,7 +28,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
       await provider.fetchRestaurantMenu(widget.restaurantId);
       await provider.fetchReviews(widget.restaurantId);
       provider.setLoading(false);
-      });
+    });
   }
 
   @override
@@ -134,13 +134,11 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                     const Icon(Icons.star, color: Colors.amber, size: 20),
                     Text(
                       restaurant.averageRating != null
-                          ? restaurant.averageRating!
-                              .toStringAsFixed(1) 
+                          ? restaurant.averageRating!.toStringAsFixed(1)
                           : 'N/A',
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
-
                     const SizedBox(width: 16),
                     const Icon(Icons.location_on, size: 16),
                     Text(
@@ -178,7 +176,8 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> {
                               color: Colors.orange),
                           const SizedBox(width: 8),
                           Text(
-                            'Save ₹${restaurant.promoCodes[0].value.toStringAsFixed(0)} with code ${restaurant.promoCodes[0].code}',
+                            'Save ${restaurant.promoCodes[0].value.toStringAsFixed(0)}% with code ${restaurant.promoCodes[0].code}',
+
                             style: const TextStyle(
                               fontWeight: FontWeight.w500,
                             ),

@@ -2,7 +2,6 @@
 import 'package:broadway/hospital_app/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'models.dart';
 
 class HospitalCategoriesPage extends StatelessWidget {

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:broadway/common/sharedpref/shared_pref.dart';
+import 'package:broadway/food_app/model/cartportion/portionoption.dart';
+import 'package:broadway/food_app/model/cartsummery/cartsummery.dart';
 import 'package:broadway/login/app_selection.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
@@ -217,6 +219,13 @@ class MainProvider extends ChangeNotifier {
   List<Review> _reviews = [];
   List<Review> get reviews => _reviews;
 
+  CartSummary? _cartSummary;
+  CartSummary? get cartSummary => _cartSummary;
+
+  List<PortionOption> portionOptions = [];
+  Map<String, double> portionPrices = {};
+  String? selectedPortion;
+
   MainProvider() {
     _dio = Dio();
     _initializeCookieJar();
@@ -292,15 +301,13 @@ class MainProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        final totalPriceValue = responseData['Total Price'];
 
         _cartItems = (responseData['Items'] as List)
             .map((item) => CartItem.fromJson(item))
             .toList();
+        _cartSummary = CartSummary.fromJson(responseData['Summary']);
 
-        _totalPrice = totalPriceValue is num
-            ? totalPriceValue.toDouble()
-            : double.tryParse(totalPriceValue.toString()) ?? 0.0;
+        _totalPrice = _cartSummary?.totalPrice ?? 0.0;
       } else {
         throw Exception('Failed to load cart items');
       }
@@ -308,11 +315,58 @@ class MainProvider extends ChangeNotifier {
       _error = 'Error fetching cart items: ${e.toString()}';
       _cartItems = [];
       _totalPrice = 0.0;
+      _cartSummary = null;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
+
+  // Future<void> fetchCartItems() async {
+  //   try {
+  //     _isLoading = true;
+  //     _error = '';
+  //     notifyListeners();
+
+  //     final url = 'https://broadway.icgedu.com/food/viewcart/';
+
+  //     // Retrieve token from SharedPreferences
+  //     final token = await SharedPreferencesHelper.getAuthToken();
+
+  //     final response = await _dio.get(
+  //       url,
+  //       options: Options(
+  //         headers: {
+  //           'Authorization': 'Bearer $token',
+  //           'Cookie': await getCookieString(Uri.parse(url)),
+  //           'Accept': 'application/json',
+  //         },
+  //       ),
+  //     );
+
+  //     if (response.statusCode == 200) {
+  //       final responseData = response.data;
+  //       final totalPriceValue = responseData['Total Price'];
+
+  //       _cartItems = (responseData['Items'] as List)
+  //           .map((item) => CartItem.fromJson(item))
+  //           .toList();
+
+  //       _totalPrice = totalPriceValue is num
+  //           ? totalPriceValue.toDouble()
+  //           : double.tryParse(totalPriceValue.toString()) ?? 0.0;
+  //     } else {
+  //       throw Exception('Failed to load cart items');
+  //     }
+  //   } catch (e) {
+  //     _error = 'Error fetching cart items: ${e.toString()}';
+  //     _cartItems = [];
+  //     _totalPrice = 0.0;
+  //   } finally {
+  //     _isLoading = false;
+  //     notifyListeners();
+  //   }
+  // }
 
   void setLoading(bool loading) {
     _isLoading = loading;
@@ -325,8 +379,10 @@ class MainProvider extends ChangeNotifier {
       notifyListeners();
 
       final url = 'https://broadway.icgedu.com/food/deletecart/$cartItemId';
-
       final token = await SharedPreferencesHelper.getAuthToken();
+      print('Attempting to delete cart item: $cartItemId');
+      print('Request URL: $url');
+      print('Authorization Token: $token');
 
       final response = await _dio.delete(
         url,
@@ -336,27 +392,79 @@ class MainProvider extends ChangeNotifier {
             'Cookie': await getCookieString(Uri.parse(url)),
             'Accept': 'application/json',
           },
+          validateStatus: (status) {
+            return status == 200 || status == 404;
+          },
         ),
       );
 
       if (response.statusCode == 200) {
         _cartItems.removeWhere((item) => item.id == cartItemId);
-
         _totalPrice = _cartItems.fold(
-            0.0, (total, item) => total + (item.price * item.quantity));
-
+          0.0,
+          (total, item) => total + (item.price * item.quantity),
+        );
+        notifyListeners();
+      } else if (response.statusCode == 404) {
+        print('Cart item with ID $cartItemId not found on server.');
+        _cartItems.removeWhere((item) => item.id == cartItemId);
         notifyListeners();
       } else {
-        throw Exception('Failed to remove cart item');
+        print(
+            'Failed to remove cart item. Status code: ${response.statusCode}');
+        print('Response data: ${response.data}');
+        throw Exception(
+          'Failed to remove cart item. Status code: ${response.statusCode}. Response: ${response.data}',
+        );
       }
     } catch (e) {
       _error = 'Error removing cart item: ${e.toString()}';
+      print(_error);
       notifyListeners();
       rethrow;
     } finally {
       _isLoading = false;
     }
   }
+
+  // Future<void> removeCartItem(int cartItemId) async {
+  //   try {
+  //     _isLoading = true;
+  //     notifyListeners();
+
+  //     final url = 'https://broadway.icgedu.com/food/deletecart/$cartItemId';
+
+  //     final token = await SharedPreferencesHelper.getAuthToken();
+
+  //     final response = await _dio.delete(
+  //       url,
+  //       options: Options(
+  //         headers: {
+  //           'Authorization': 'Bearer $token',
+  //           'Cookie': await getCookieString(Uri.parse(url)),
+  //           'Accept': 'application/json',
+  //         },
+  //       ),
+  //     );
+
+  //     if (response.statusCode == 200) {
+  //       _cartItems.removeWhere((item) => item.id == cartItemId);
+
+  //       _totalPrice = _cartItems.fold(
+  //           0.0, (total, item) => total + (item.price * item.quantity));
+
+  //       notifyListeners();
+  //     } else {
+  //       throw Exception('Failed to remove cart item');
+  //     }
+  //   } catch (e) {
+  //     _error = 'Error removing cart item: ${e.toString()}';
+  //     notifyListeners();
+  //     rethrow;
+  //   } finally {
+  //     _isLoading = false;
+  //   }
+  // }
 
   // Future<void> updateCartItemQuantity(int cartItemId, int newQuantity) async {
   //   try {
@@ -433,7 +541,7 @@ class MainProvider extends ChangeNotifier {
       }
     } catch (e) {
       print('Error in updateCartItemQuantity(): $e');
-      throw e; 
+      throw e;
     }
   }
 
@@ -1061,6 +1169,179 @@ class MainProvider extends ChangeNotifier {
 
   ///Add to cart
 
+  // Future<bool> addToCart(int itemId) async {
+  //   try {
+  //     _isLoading = true;
+  //     _error = '';
+  //     notifyListeners();
+
+  //     final url = Uri.parse('https://broadway.icgedu.com/food/addcart/$itemId');
+
+  //     final token = await SharedPreferencesHelper.getAuthToken();
+
+  //     final response = await _dio.post(
+  //       url.toString(),
+  //       data: {"Quantity": _quantity},
+  //       options: Options(
+  //         headers: {
+  //           'Authorization': 'Bearer $token',
+  //           'Cookie': await getCookieString(url),
+  //           'Accept': 'application/json',
+  //           'Content-Type': 'application/json',
+  //         },
+  //       ),
+  //     );
+
+  //     _isLoading = false;
+
+  //     if (response.statusCode == 200) {
+  //       final responseData = response.data;
+  //       if (responseData['msg'] == 'Cart Added Successfully') {
+  //         notifyListeners();
+  //         return true;
+  //       }
+  //     }
+
+  //     _error = 'Failed to add to cart';
+  //     notifyListeners();
+  //     return false;
+  //   } catch (e) {
+  //     print('Error adding to cart: $e');
+  //     _isLoading = false;
+  //     _error = 'Error adding to cart';
+  //     notifyListeners();
+  //     return false;
+  //   }
+  //}
+
+  // // Future<bool> addToCart(int itemId) async {
+  // //   try {
+  // //   _isLoading = true;
+  // //   _error = '';
+  // //   notifyListeners();
+
+  // //   final url = Uri.parse('https://broadway.icgedu.com/food/addcart/$itemId');
+
+  // //   final token = await SharedPreferencesHelper.getAuthToken();
+
+  // //   final response = await _dio.post(
+  // //   url.toString(),
+  // //   data: {"Quantity": quantity},
+  // //   options: Options(
+  // //   headers: {
+  // //   'Authorization': 'Bearer $token',
+  // //   'Cookie': await getCookieString(url),
+  // //   'Accept': 'application/json',
+  // //   'Content-Type': 'application/json',
+  // //   },
+  // //   ),
+  // //   );
+
+  // //   _isLoading = false;
+
+  // //   if (response.statusCode == 200) {
+  // //   final responseData = response.data;
+  // //   if (responseData['msg'] == 'Cart Added Successfully' ||
+  // //   responseData['msg'] == 'Item quantity updated in cart') {
+  // //   notifyListeners();
+  // //   return true;
+  // //   }
+  // //   }
+
+  // //   _error = 'Failed to add to cart';
+  // //   notifyListeners();
+  // //   return false;
+  // //   } on DioException catch (e) {
+  // //   print('Dio Error adding to cart: $e');
+  // //   _isLoading = false;
+
+  // //   if (e.response != null && e.response!.data != null) {
+  // //   final responseData = e.response!.data;
+
+  // //   if (responseData is Map && responseData['msg'] != null) {
+  // //   _error = responseData['msg'];
+  // //   } else if (responseData is String) {
+  // //   _error = responseData;
+  // //   } else {
+  // //   _error = 'Your cart already contains items from another restaurant';
+  // //   }
+  // //   } else {
+  // //   _error = 'Error adding to cart';
+  // //   }
+
+  // //   notifyListeners();
+  // //   return false;
+  // //   } catch (e) {
+  // //   print('Unexpected error adding to cart: $e');
+  // //   _isLoading = false;
+  // //   _error = 'Unexpected error occurred';
+  // //   notifyListeners();
+  // //   return false;
+  // //   }
+  // // }
+
+  // Future<bool> addToCart(int itemId) async {
+  //   try {
+  //     _isLoading = true;
+  //     _error = '';
+  //     notifyListeners();
+
+  //     final url = Uri.parse('https://broadway.icgedu.com/food/addcart/$itemId');
+
+  //     final token = await SharedPreferencesHelper.getAuthToken();
+
+  //     final response = await _dio.post(
+  //       url.toString(),
+  //       data: {"Quantity": quantity},
+  //       options: Options(
+  //         headers: {
+  //           'Authorization': 'Bearer $token',
+  //           'Cookie': await getCookieString(url),
+  //           'Accept': 'application/json',
+  //           'Content-Type': 'application/json',
+  //         },
+
+  //       ),
+
+  //     ); print(itemId);
+
+  //     _isLoading = false;
+
+  //     if (response.statusCode == 200) {
+  //       final responseData = response.data;
+
+  //       if (responseData['msg'] == 'Please select the portion size (half, quarter, full) for this item.') {
+
+  //         portionOptions.clear();
+
+  //         (responseData['portion_options'] as List).forEach((portionName) {
+  //           final price = (responseData['prices'] as Map)[portionName];
+  //           portionOptions.add(PortionOption.fromJson(portionName, price));
+  //         });
+
+  //         notifyListeners();
+  //         return false;
+  //       }
+
+  //       if (responseData['msg'] == 'Cart Added Successfully' ||
+  //           responseData['msg'] == 'Item quantity updated in cart') {
+  //         notifyListeners();
+  //         return true;
+  //       }
+  //     }
+
+  //     _error = 'Failed to add to cart';
+  //     notifyListeners();
+  //     return false;
+  //   } catch (e) {
+  //     print('Error in addToCart: $e');
+  //     _isLoading = false;
+  //     _error = 'Error adding to cart';
+  //     notifyListeners();
+  //     return false;
+  //   }
+  // }
+
   Future<bool> addToCart(int itemId) async {
     try {
       _isLoading = true;
@@ -1073,7 +1354,7 @@ class MainProvider extends ChangeNotifier {
 
       final response = await _dio.post(
         url.toString(),
-        data: {"Quantity": _quantity},
+        data: {"Quantity": quantity},
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
@@ -1088,23 +1369,280 @@ class MainProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final responseData = response.data;
-        if (responseData['msg'] == 'Cart Added Successfully') {
+
+        if (responseData['msg'] ==
+            'Please select the portion size (half, quarter, full) for this item.') {
+          portionOptions.clear();
+          (responseData['portion_options'] as List).forEach((portionName) {
+            final price = (responseData['prices'] as Map)[portionName];
+            portionOptions.add(PortionOption.fromJson(portionName, price));
+          });
+
+          notifyListeners();
+          return false;
+        }
+
+        if (responseData['msg'] == 'Cart Added Successfully' ||
+            responseData['msg'] == 'Item quantity updated in cart') {
           notifyListeners();
           return true;
+        }
+
+        if (responseData['msg'] ==
+            'Your cart already contains items from another restaurant') {
+          _error = responseData['msg'];
+          notifyListeners();
+          return false;
         }
       }
 
       _error = 'Failed to add to cart';
       notifyListeners();
       return false;
-    } catch (e) {
-      print('Error adding to cart: $e');
+    } on DioException catch (e) {
+      print('Dio Error adding to cart: $e');
       _isLoading = false;
-      _error = 'Error adding to cart';
+
+      if (e.response != null && e.response!.data != null) {
+        final responseData = e.response!.data;
+
+        if (responseData is Map && responseData['msg'] != null) {
+          _error = responseData['msg'];
+        } else if (responseData is String) {
+          _error = responseData;
+        } 
+        // else {
+        //   _error = 'Your cart already contains items from another restaurant';
+        // }
+      } else {
+        _error = 'Error adding to cart';
+      }
+
+      notifyListeners();
+      return false;
+    } catch (e) {
+      print('Unexpected error adding to cart: $e');
+      _isLoading = false;
+      _error = 'Unexpected error occurred';
       notifyListeners();
       return false;
     }
   }
+
+//   Future<bool> addToCart(int itemId) async {
+//   try {
+//     _isLoading = true;
+//     _error = '';
+//     notifyListeners();
+
+//     final url = Uri.parse('https://broadway.icgedu.com/food/addcart/$itemId');
+
+//     final token = await SharedPreferencesHelper.getAuthToken();
+
+//     final response = await _dio.post(
+//       url.toString(),
+//       data: {"Quantity": quantity},
+//       options: Options(
+//         headers: {
+//           'Authorization': 'Bearer $token',
+//           'Cookie': await getCookieString(url),
+//           'Accept': 'application/json',
+//           'Content-Type': 'application/json',
+//         },
+//       ),
+//     );
+
+//     _isLoading = false;
+
+//     if (response.statusCode == 200) {
+//       final responseData = response.data;
+
+//       if (responseData['msg'] == 'Please select the portion size (half, quarter, full) for this item.') {
+//         portionOptions.clear();
+
+//         (responseData['portion_options'] as List).forEach((portionName) {
+//           final price = (responseData['prices'] as Map)[portionName];
+//           portionOptions.add(PortionOption.fromJson(portionName, price));
+//         });
+
+//         notifyListeners();
+//         return false;
+//       }
+
+//       if (responseData['msg'] == 'Cart Added Successfully' ||
+//           responseData['msg'] == 'Item quantity updated in cart') {
+//         notifyListeners();
+//         return true;
+//       }
+//     }
+
+//     _error = 'Failed to add to cart';
+//     notifyListeners();
+//     return false;
+//   } on DioException catch (e) {
+
+//     print('Dio Error adding to cart: $e');
+//     _isLoading = false;
+
+//     if (e.response != null && e.response!.data != null) {
+//       final responseData = e.response!.data;
+
+//       if (responseData is Map && responseData['msg'] != null) {
+//         _error = responseData['msg'];
+//       } else if (responseData is String) {
+//         _error = responseData;
+//       } else {
+//         _error = 'Your cart already contains items from another restaurant';
+//       }
+//     } else {
+//       _error = 'Error adding to cart';
+//     }
+
+//     notifyListeners();
+//     return false;
+//   } catch (e) {
+//     print('Unexpected error adding to cart: $e');
+//     _isLoading = false;
+//     _error = 'Unexpected error occurred';
+//     notifyListeners();
+//     return false;
+//   }
+// }
+
+  // Future<bool> addCustomizableItemToCart(int itemId) async {
+  //   if (selectedPortion == null) {
+  //     _error = 'Please select a portion size';
+  //     notifyListeners();
+  //     return false;
+  //   }
+
+  //   try {
+  //     _isLoading = true;
+  //     _error = '';
+  //     notifyListeners();
+
+  //     final url = Uri.parse('https://broadway.icgedu.com/food/addcart/$itemId');
+
+  //     final token = await SharedPreferencesHelper.getAuthToken();
+
+  //     final response = await _dio.post(
+  //       url.toString(),
+  //       data: {"Quantity": quantity, "portion_size": selectedPortion},
+  //       options: Options(
+  //         headers: {
+  //           'Authorization': 'Bearer $token',
+  //           'Cookie': await getCookieString(url),
+  //           'Accept': 'application/json',
+  //           'Content-Type': 'application/json',
+  //         },
+  //       ),
+  //     );
+
+  //     _isLoading = false;
+
+  //     if (response.statusCode == 200) {
+  //       final responseData = response.data;
+
+  //       if (responseData['msg'] == 'Cart Added Successfully' ||
+  //           responseData['msg'] == 'Item quantity updated in cart') {
+  //         selectedPortion = null;
+  //         notifyListeners();
+  //         return true;
+  //       }
+  //     }
+
+  //     _error = 'Failed to add to cart';
+  //     notifyListeners();
+  //     return false;
+  //   } catch (e) {
+  //     print('Error adding customizable item to cart: $e');
+  //     _isLoading = false;
+  //     _error = 'Error adding item to cart';
+  //     notifyListeners();
+  //     return false;
+  //   }
+  // }
+
+  // void selectPortionSize(String portion) {
+  //   selectedPortion = portion;
+  //   notifyListeners();
+  // }
+
+  Future<bool> addCustomizableItemToCart(int itemId) async {
+  // Ensure a portion size is selected
+  if (selectedPortion == null) {
+    _error = 'Please select a portion size';
+    notifyListeners();
+    return false;
+  }
+
+  try {
+    // Set loading state
+    _isLoading = true;
+    _error = '';
+    notifyListeners();
+
+    // API endpoint
+    final url = Uri.parse('https://broadway.icgedu.com/food/addcart/$itemId');
+
+    // Fetch authorization token and cookies
+    final token = await SharedPreferencesHelper.getAuthToken();
+    final cookie = await getCookieString(url);
+
+    // Make POST request using Dio
+    final response = await _dio.post(
+      url.toString(),
+      data: {
+        "Quantity": quantity,
+        "portion_size": selectedPortion,
+      },
+      options: Options(
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Cookie': cookie,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ),
+    );
+
+ 
+    _isLoading = false;
+
+    
+    if (response.statusCode == 200) {
+      final responseData = response.data;
+
+     
+      if (responseData['msg'] == 'Cart Added Successfully' ||
+          responseData['msg'] == 'Item quantity updated in cart') {
+        selectedPortion = null; 
+        notifyListeners();
+        return true;
+      }
+    }
+
+
+    _error = response.data?['msg'] ?? 'Failed to add to cart';
+    notifyListeners();
+    return false;
+
+  } catch (e) {
+
+    print('Error adding customizable item to cart: $e');
+    _isLoading = false;
+    _error = 'Error adding item to cart';
+    notifyListeners();
+    return false;
+  }
+}
+
+
+void selectPortionSize(String portion) {
+  selectedPortion = portion;
+  notifyListeners();
+}
+
 
   ///apply code
   Future<void> applyPromoCode(BuildContext context, String code) async {

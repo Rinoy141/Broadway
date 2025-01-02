@@ -728,12 +728,6 @@ class _CartPageState extends State<CartPage> {
       // print('Payment success response received: ${response.paymentId}');
       final isNotified = await Provider.of<MainProvider>(context, listen: false)
           .notifyRazorpayOrder();
-
-      // if (!isNotified) {
-      //   throw Exception(
-      //       'Thanks for ordering! Your order has been confirmed and is on its way.');
-      // }
-
       if (!isNotified) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -744,11 +738,11 @@ class _CartPageState extends State<CartPage> {
         );
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                'Thanks for ordering! Your order has been confirmed and is on its way.')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //       content: Text(
+      //           'Thanks for ordering! Your order has been confirmed and is on its way.')),
+      // );
     } catch (e) {
       print('Error in _handlePaymentSuccess: $e');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1036,7 +1030,7 @@ class _CartPageState extends State<CartPage> {
                                         ),
                                         const Spacer(),
                                         Text(
-                                            '\$${(cartItem.price * cartItem.quantity).toStringAsFixed(2)}',
+                                            '\$${(cartItem.price).toStringAsFixed(2)}',
                                             style: const TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 16))
@@ -1055,48 +1049,29 @@ class _CartPageState extends State<CartPage> {
                     padding: const EdgeInsets.only(top: 16),
                     child: RefreshIndicator(
                       onRefresh: () async {
-                        await cartProvider
-                            .fetchCartItems(); // Re-fetch cart items on refresh
+                        await cartProvider.fetchCartItems();
                       },
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _buildSummaryRow('Subtotal',
-                              '\$${cartProvider.cartItems.first.totalPrice.toStringAsFixed(2)}'),
+                              '\$${cartProvider.cartSummary?.subtotal.toStringAsFixed(2) ?? '0.00'}'),
                           _buildSummaryRow('Delivery Charge',
-                              '\$${cartProvider.cartItems.first.deliveryCharge.toStringAsFixed(2)}'),
-                          _buildSummaryRow('Offer Price',
-                              '${cartProvider.cartItems.first.offerPrice.toStringAsFixed(0)}%'),
+                              '\$${cartProvider.cartSummary?.deliveryTotal.toStringAsFixed(2) ?? '0.00'}'),
+                          _buildSummaryRow('Discount',
+                              '\$${cartProvider.cartSummary?.discountTotal.toStringAsFixed(2) ?? '0.00'}'),
+                          const Divider(),
                           _buildSummaryRow('Total',
-                              '\$${(cartProvider.cartItems.first.totalPrice.toStringAsFixed(2))}'),
+                              '\$${cartProvider.cartSummary?.totalPrice.toStringAsFixed(2) ?? '0.00'}',
+                              isBold: true),
                           const SizedBox(height: 16),
                         ],
                       ),
                     ),
-                  ),
+                  )
                 ],
               ),
             );
-          }
-
-          double calculateSubtotal() {
-            return cartProvider.cartItems
-                .fold(0, (sum, item) => sum + (item.price * item.quantity));
-          }
-
-          double calculateDeliveryCharge() {
-            return cartProvider.cartItems
-                .fold(0, (sum, item) => sum + item.deliveryCharge);
-          }
-
-          double calculateOfferDiscount(
-              double subtotal, double offerPercentage) {
-            return subtotal * (offerPercentage / 100);
-          }
-
-          double calculateTotal(
-              double subtotal, double deliveryCharge, double discount) {
-            return subtotal + deliveryCharge - discount;
           }
 
           // Main build method
@@ -1119,9 +1094,9 @@ class _CartPageState extends State<CartPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _paymentOption('Online Payment', Icons.payment,
-                            '\$${(cartProvider.cartItems.first.totalPrice.toStringAsFixed(2))}'),
+                            '\$${(cartProvider.cartSummary?.totalPrice.toStringAsFixed(2))}'),
                         _paymentOption('Cash On Delivery', Icons.attach_money,
-                            '\$${(cartProvider.cartItems.first.totalPrice.toStringAsFixed(2))}'),
+                            '\$${(cartProvider.cartSummary?.totalPrice.toStringAsFixed(2))}'),
                       ],
                     ),
                   ),
@@ -1289,19 +1264,16 @@ void _showOrderSuccessDialog(BuildContext context, MainProvider cartProvider) {
       return AlertDialog(
         title: const Text('Order Successful'),
         content: const Text(
-          'Your order has been placed successfully!.',
+          'Your order has been placed successfully!',
         ),
         actions: [
           TextButton(
             onPressed: () async {
-              var cartItemsCopy = List.from(cartProvider.cartItems);
-              for (var item in cartItemsCopy) {
-                await cartProvider.removeCartItem(item.id);
+              for (final cartItem in List.from(cartProvider.cartItems)) {
+                await cartProvider.removeCartItem(cartItem.id);
               }
+
               Navigator.of(context).pop();
-              // ScaffoldMessenger.of(context).showSnackBar(
-              //   SnackBar(content: Text('Cart cleared successfully')),
-              // );
             },
             child: const Text('OK'),
           ),
@@ -1310,6 +1282,36 @@ void _showOrderSuccessDialog(BuildContext context, MainProvider cartProvider) {
     },
   );
 }
+
+
+// void _showOrderSuccessDialog(BuildContext context, MainProvider cartProvider) {
+//   showDialog(
+//     context: context,
+//     builder: (BuildContext context) {
+//       return AlertDialog(
+//         title: const Text('Order Successful'),
+//         content: const Text(
+//           'Your order has been placed successfully!.',
+//         ),
+//         actions: [
+//           TextButton(
+//             onPressed: () async {
+//               var cartItemsCopy = List.from(cartProvider.cartItems);
+//               for (var item in cartItemsCopy) {
+//                 await cartProvider.removeCartItem(item.id);
+//               }
+//               Navigator.of(context).pop();
+//               // ScaffoldMessenger.of(context).showSnackBar(
+//               //   SnackBar(content: Text('Cart cleared successfully')),
+//               // );
+//             },
+//             child: const Text('OK'),
+//           ),
+//         ],
+//       );
+//     },
+//   );
+// }
 
 void _clearCartAndShowSuccessMessage(
     BuildContext context, MainProvider cartProvider) async {
