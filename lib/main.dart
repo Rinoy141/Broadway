@@ -6,6 +6,9 @@ import 'package:broadway/providerss/app_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'Buy_and sell/buy_1.dart';
+var w;
+var h;
 
 
 void main() async{
@@ -31,15 +34,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    return Consumer<MainProvider>(git
-      builder: (context, mainProvider, child) {
+    h=MediaQuery.of(context).size.height;
+    w=MediaQuery.of(context).size.width;
+    return Consumer<MainProvider>(builder: (context, mainProvider, child) {
         //print('Building MyApp with hasSeenOnboarding: ${mainProvider.hasSeenOnboarding}');
         return MaterialApp(
             debugShowCheckedModeBanner: false, 
             // home:
             //  mainProvider.hasSeenOnboarding ?  LoginPage() :  OnboardingScreen()
-            home: userId != null ? AppSelection(userId: userId!,) : OnboardingScreen(),
+            home: userId != null ? AppSelection(userId: userId!,) : Buy(),
             //home: mainProvider.isLoading ? AppSelection() : mainProvider.hasSeenOnboarding ? LoginPage() : OnboardingScreen(),
              );
 

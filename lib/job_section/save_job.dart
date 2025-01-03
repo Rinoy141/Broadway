@@ -114,8 +114,8 @@
 //   }
 // }
 import 'package:flutter/material.dart';
-import 'job_search.dart';
-import 'saved_jobs.dart'; // Import the SavedJobs page
+// import 'job_search.dart';
+// import 'saved_jobs.dart'; // Import the SavedJobs page
 
 class JobListPage extends StatefulWidget {
   @override

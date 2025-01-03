@@ -1,12 +1,16 @@
 
 import 'package:broadway/common/colors.dart';
 import 'package:broadway/common/images.dart';
-import 'package:broadway/job_app/Filter_page.dart';
-import 'package:broadway/job_app/notification.dart';
+// import 'package:broadway/job_app/Filter_page.dart';
+// import 'package:broadway/job_app/notification.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
-import 'one job_desc.dart';
+import 'filter_page.dart';
+import 'notification.dart';
+import 'one_job desc.dart';
+// import 'one job_desc.dart';
+// import 'one_job desc.dart';
 class PageContainer {
   final String name;
   final Widget page;
@@ -226,7 +230,7 @@ class _JobSearchState extends State<JobSearch> {
                             height: h*0.29,
                             width: w*0.3,
                             decoration: BoxDecoration(
-                                color: thecolors.grey4,
+                                color: thecolors.gray4,
                                 borderRadius: BorderRadiusDirectional.circular(w*0.03)
                             ),
                             child: ListTile(
@@ -344,7 +348,7 @@ class SavedJobs extends StatelessWidget {
               height: h*0.19,
               width: w*0.3,
               decoration: BoxDecoration(
-                  color: thecolors.grey4,
+                  color: thecolors.gray4,
                   borderRadius: BorderRadiusDirectional.circular(w*0.03)
               ),
 

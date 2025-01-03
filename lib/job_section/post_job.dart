@@ -2,9 +2,9 @@ import 'package:broadway/common/colors.dart';
 import 'package:broadway/common/images.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
-import '../Buy and_sell/product details.dart';
+// import '../Buy and_sell/product details.dart';
 import '../main.dart';
+import '../view/product details.dart';
 
 class postjob extends StatefulWidget {
   const postjob({super.key});

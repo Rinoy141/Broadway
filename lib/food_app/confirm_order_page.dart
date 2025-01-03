@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 class CartPage extends StatefulWidget {
-  const CartPage({Key? key}) : super(key: key);
+  const CartPage({Key? key, required image, required name, required product, required String price}) : super(key: key);
 
   @override
   _CartPageState createState() => _CartPageState();

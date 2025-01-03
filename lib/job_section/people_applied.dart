@@ -3,6 +3,8 @@ import 'package:broadway/common/images.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import 'notification.dart';
+import 'notification.dart';
 
 class peopleapplied extends StatefulWidget {
   const peopleapplied({super.key});
