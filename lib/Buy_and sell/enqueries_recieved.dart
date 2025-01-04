@@ -252,7 +252,6 @@ class _enquiriesrecievedState extends State<enquiriesrecieved> {
                                 ),
                               ],
                             ),
-
                           ],
                         ),
                       ),

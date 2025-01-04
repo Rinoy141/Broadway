@@ -7,7 +7,6 @@ import '../common/images.dart';
 import '../main.dart';
 import '../view/buy_one.dart';
 // import 'buy_one.dart';
-
 class orderconfirmation extends StatefulWidget {
   const orderconfirmation({super.key});
 

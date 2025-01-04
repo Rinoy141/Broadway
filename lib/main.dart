@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'Buy_and sell/buy_1.dart';
+import 'Buy_and sell/buy_one.dart';
 var w;
 var h;
 
@@ -42,7 +43,7 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false, 
             // home:
             //  mainProvider.hasSeenOnboarding ?  LoginPage() :  OnboardingScreen()
-            home: userId != null ? AppSelection(userId: userId!,) : Buy(),
+            home: userId != null ? AppSelection(userId: userId!,) : BuyOne(),
             //home: mainProvider.isLoading ? AppSelection() : mainProvider.hasSeenOnboarding ? LoginPage() : OnboardingScreen(),
              );
 
